@@ -320,6 +320,25 @@ i[class^="ph-"], i[class*=" ph-"] {
 }
 .map-ctx-item:hover { background: var(--panel-2); color: var(--accent); }
 
+/* Message bref sur la carte (attente du SIA, carte VAC absente…).
+   pointer-events:none → n'intercepte jamais un clic sur la carte. */
+.vac-toast {
+  position: fixed;
+  z-index: 1300;
+  left: 50%;
+  bottom: 34px;
+  transform: translateX(-50%);
+  max-width: 70vw;
+  padding: .5rem .9rem;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .18);
+  color: var(--ink);
+  font-size: 13px;
+  pointer-events: none;
+}
+
 /* Étiquette de leg (cap magnétique + distance) au milieu du segment de route.
    pointer-events:none → ne bloque pas le clic-glisser de création de point. */
 .leg-badge-wrap { pointer-events: none; }

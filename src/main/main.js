@@ -39,6 +39,7 @@ const briefSource = require('./brief-source');
 const acces = require('./acces');
 const elevation = require('./elevation');
 const declinaison = require('./declinaison');
+const vacSia = require('./vac-sia');
 const planIo = require('./plan-io');
 const { setupAutoUpdater, quitAndInstall } = require('./updater');
 
@@ -248,6 +249,7 @@ ipcMain.handle('navaids-bbox', async (_e, bbox) => airportsData.navaidsDansBbox(
 ipcMain.handle('aeroport-par-code', async (_e, code) => airportsData.aeroportParCode(code));
 ipcMain.handle('feature-proche', async (_e, { lat, lon, rayonNm } = {}) =>
   airportsData.featureProche(lat, lon, rayonNm));
+ipcMain.handle('ouvrir-vac', async (_e, code) => vacSia.ouvrirVac(code));
 
 // Navigation
 ipcMain.handle('declinaison', async (_e, { lat, lon } = {}) => declinaison.en(lat, lon));

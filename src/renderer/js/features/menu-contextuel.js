@@ -78,6 +78,8 @@ function ouvrirMenuAeroport(airport, e) {
   const rawCode = (airport.code || airport.ident || '').toUpperCase();
   const k = routeWaypoints.findIndex((w) => (w.code || '').toUpperCase() === rawCode);
   if (k >= 0) items.push({ label: t('ctxDeleteWp'), action: () => supprimerPointTournant(k) });
+  // Carte VAC du SIA : seulement sur un code OACI métropolitain régulier.
+  if (vacEligible(code)) items.push({ label: t('ctxVac'), action: () => ouvrirCarteVac(code) });
   // Cercle de portée centré sur l'aéroport (rayon saisi dans la modale).
   items.push({ label: t('ctxRangeCircle'), action: () => ouvrirModaleCercle(L.latLng(airport.lat, airport.lon)) });
   if (aDesCercles()) items.push({ label: t('ctxRangeClear'), action: effacerCercles });
