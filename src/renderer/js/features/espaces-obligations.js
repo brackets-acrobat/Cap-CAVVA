@@ -29,21 +29,41 @@ const ESPACE_LIBELLES = {
   AP: 'Zone d\'activité', Bal: 'Ballon captif', other: 'Autre',
 };
 
-// Familles d'affichage. Les couleurs approchent la convention de la carte OACI
-// française — à recaler sur la légende officielle du SIA avant diffusion.
+// Familles d'affichage.
+//
+// LES COULEURS SUIVENT LA CONVENTION ÉCRITE DU SIA, PAS UNE PALETTE OFFICIELLE :
+// il n'en existe pas. Le « Recueil de critères cartographiques » v2.2 ne donne
+// aucune valeur par type d'espace — sa table des couleurs (annexe 2) porte sur
+// la topographie, et son chapitre « Carte 1/500 000 » est marqué « Réservé ».
+// Ce qu'il prescrit est qualitatif :
+//   • espaces contrôlés (CTR, TMA, CTA) → bleu, contour fin ;
+//   • zones interdites, réglementées ou dangereuses → rouge, aire hachurée ;
+//   • RTBA → rouge pointillé hachuré ; ZIT → rouge quadrillé.
+// Les SIV sont en vert sur la carte OACI (relevé sur la carte, pas dans le
+// recueil, qui renvoie à l'arrêté du 6 juillet 2018).
+//
+// Le rouge et le brun sont repris de la table du recueil, relevés dans son
+// image. Attention : ce scan de 2009 est décalé en couleur — son échantillon
+// « MAGENTA » se mesure à #511A15, un bordeaux. Il sert de repère de teinte,
+// jamais de référence chiffrée ; les valeurs ci-dessous restent un choix.
+//
+// « Parcs et survol » passe du vert franc à l'olive (teinte des régions boisées
+// du recueil) pour laisser le vert aux SIV sans les rendre confusables : mesuré
+// en CIEDE2000, l'écart le plus faible de la palette reste ΔE 15,9, entre CTR
+// et TMA — voulu, ce sont deux espaces contrôlés.
 //
 // Les familles « haute altitude » sont éteintes par défaut : au-dessus du
 // FL 145, rien ne concerne un vol de club, et les allumer noie la carte sous
 // 600 polygones.
 const ESPACE_FAMILLES = [
-  { id: 'rpd',    nom: 'R / P / D',                types: ['R', 'P', 'D'],                    couleur: '#e02b2b', on: true },
+  { id: 'rpd',    nom: 'R / P / D',                types: ['R', 'P', 'D'],                    couleur: '#ef3027', on: true },
   { id: 'ctr',    nom: 'CTR',                      types: ['CTR', 'MCTR'],                    couleur: '#1f6feb', on: true },
   { id: 'tma',    nom: 'TMA',                      types: ['TMA'],                            couleur: '#5a8fd6', on: true },
   { id: 'mil',    nom: 'Militaire (TRA, CBA)',     types: ['TRA', 'CBA'],                     couleur: '#8a6d3b', on: true },
   { id: 'radio',  nom: 'RMZ / TMZ',                types: ['RMZ', 'TMZ', 'RMZ-TMZ'],          couleur: '#6b7b8c', on: true },
-  { id: 'parc',   nom: 'Parcs et survol',          types: ['PRN', 'SUR'],                     couleur: '#2f9e5a', on: true },
+  { id: 'parc',   nom: 'Parcs et survol',          types: ['PRN', 'SUR'],                     couleur: '#8a8f2e', on: true },
   { id: 'sport',  nom: 'Voltige, parachutage',     types: ['Vol', 'Pje', 'TrVL', 'TrPla', 'TrPVL', 'AP', 'Bal', 'Aer'], couleur: '#8e44ad', on: true },
-  { id: 'siv',    nom: 'SIV',                      types: ['SIV'],                            couleur: '#3aa6a6', on: false },
+  { id: 'siv',    nom: 'SIV',                      types: ['SIV'],                            couleur: '#1f9d55', on: false },
   { id: 'haut',   nom: 'Haute altitude',           types: ['CTA', 'LTA', 'UTA', 'CTL', 'FIR', 'UIR', 'UAC', 'ACC', 'OCA', 'FRA', 'FBZ', 'other'], couleur: '#444c56', on: false },
 ];
 
