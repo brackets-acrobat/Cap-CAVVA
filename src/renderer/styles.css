@@ -24,6 +24,7 @@
   --vert-h:       #047857;
   --rouge:        #e11900;   /* action destructrice */
   --rouge-h:      #b91500;
+  --ambre:        #f59e0b;   /* ce qui vient du brief de la séance */
   --sep:          #e2e8f0;   /* séparateur à l'intérieur d'un panneau */
   --bande:        #eef2f7;   /* bandeaux secondaires, champs */
   --off-bg:       #cbd5e1;   /* bouton inactif */
@@ -338,6 +339,9 @@ main { flex: 1; min-height: 0; padding: 0; position: relative; }
 /* --- Bouton toggle du plan de vol : accentué quand le panneau est ouvert --- */
 #btn-legs.is-active { background: var(--bleu); color: #fff; }
 #btn-legs.is-active i[class^="ph-"] { color: #fff; }
+/* Le brief prend l'ambre, sa couleur partout ailleurs (halos, cercle, panneau). */
+#btn-brief.is-active { background: var(--ambre); color: #fff; }
+#btn-brief.is-active i[class^="ph-"] { color: #fff; }
 
 /* --- Panneau « Plan de vol » : tiers droit de la carte, pleine hauteur --- */
 .legs-panel {
@@ -913,6 +917,175 @@ main.profil-open .leaflet-control-scale { opacity: 0; visibility: hidden; }
 .esp-dur     { background: #fee2e2; color: #991b1b; }
 .esp-horaire { background: #fef3c7; color: #7c2d12; }
 .esp-info    { background: var(--bande); color: #334155; }
+
+/* ============================================================
+   Brief de la séance — même géométrie que le panneau « Plan de vol »
+   (.legs-panel, tiers droit) : les deux ne s'affichent jamais ensemble.
+   L'ambre y désigne partout ce qui vient du brief, comme sur la carte.
+   ============================================================ */
+
+.brief-panel { border-left-color: var(--ambre); }
+
+/* Panneau ouvert : mêmes décalages que .legs-open pour les contrôles Leaflet. */
+main.brief-open .leaflet-top.leaflet-right { right: max(33.333%, 300px); transition: right .15s ease; }
+
+.brief-head-actions { display: inline-flex; gap: 6px; }
+.brief-corps { flex: 1; overflow-y: auto; padding: 10px 12px; }
+.brief-etat {
+  margin: 0;
+  padding: 5px 12px;
+  border-top: 1px solid var(--sep);
+  background: var(--bande);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+/* Identité de la séance. */
+.brief-bloc {
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: var(--bande);
+  border: 1px solid var(--sep);
+  border-left: 3px solid var(--ambre);
+  border-radius: 8px;
+}
+.brief-titre { margin: 0 0 8px; font-size: 14px; color: var(--title); }
+.brief-ligne { display: flex; gap: 8px; align-items: baseline; font-size: 12px; line-height: 1.6; }
+.brief-lbl { flex: none; width: 96px; color: var(--muted); }
+.brief-val { color: var(--ink); font-weight: 600; }
+.brief-consignes {
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--sep);
+  font-size: 12px;
+  color: var(--ink);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.brief-sous-titre {
+  margin: 4px 0 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.brief-vide { margin: 10px 0; color: var(--muted); font-size: 12px; }
+
+/* Écart de cycle : une explication, pas une alarme. */
+.brief-avert {
+  margin: 0 0 10px;
+  padding: 7px 10px;
+  background: #fef3c7;
+  border-radius: 6px;
+  font-size: 11.5px;
+  color: #7c2d12;
+  line-height: 1.45;
+}
+
+/* Une zone active. Le liseré ambre reprend le halo posé sur la carte. */
+.brief-zone {
+  padding: 8px 8px 8px 9px;
+  border-bottom: 1px solid var(--sep);
+  border-left: 3px solid var(--ambre);
+  cursor: pointer;
+}
+.brief-zone:last-child { border-bottom: 0; }
+.brief-zone:hover { background: var(--bande); }
+/* Saisie qu'aucune zone du cycle ne recouvre : dite en ambre foncé et non
+   cliquable — il n'y a rien à montrer sur la carte, mais le texte reste lisible
+   par le pilote, qui saura probablement l'interpréter. */
+.brief-zone-inconnue { border-left-color: var(--warn); cursor: default; background: #fffbeb; }
+.brief-zone-inconnue:hover { background: #fffbeb; }
+.brief-zone-inconnue .brief-zone-nom { color: var(--warn); }
+.brief-zone-nom { display: flex; align-items: center; gap: 4px; font-weight: 600; font-size: 12.5px; color: var(--title); }
+.brief-zone-meta { margin-left: 17px; font-size: 11.5px; color: var(--muted); font-family: var(--mono); }
+.brief-zone-hor { margin: 3px 0 0 17px; font-size: 11px; color: var(--muted); line-height: 1.35; }
+/* Ce que l'organisateur a réellement tapé : garder la trace de la saisie permet
+   de repérer une coquille sur le site sans quitter l'application. */
+.brief-zone-saisie {
+  margin: 4px 0 0 17px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+/* --- La liste des séances, sous le détail de celle qui est choisie --- */
+.brief-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.brief-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 7px 9px;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--sep);
+  border-left: 3px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.brief-carte:hover { background: var(--bande); border-color: var(--line); }
+/* La séance affichée au-dessus : ambre plein, comme tout ce qui vient du brief. */
+.brief-carte.est-choisie {
+  border-left-color: var(--ambre);
+  background: #fef3c7;
+  border-color: #fcd34d;
+}
+/* Une date passée reste consultable, mais s'annonce comme telle. */
+.brief-carte.est-passee { opacity: .55; }
+.brief-carte.est-passee.est-choisie { opacity: 1; }
+.brief-carte-date { font-weight: 600; font-size: 12.5px; color: var(--title); }
+.brief-carte-infos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+.brief-etiquette {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--bande);
+  color: #334155;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+
+/* Échec du chargement : le message dépend du code d'erreur. */
+.brief-erreur {
+  padding: 12px;
+  background: var(--bande);
+  border: 1px solid var(--sep);
+  border-left: 3px solid var(--rouge);
+  border-radius: 8px;
+}
+/* « Aucun brief publié » n'est pas une panne — ardoise, pas rouge. */
+.brief-erreur-absent { border-left-color: var(--gris); }
+.brief-erreur-txt { margin: 0; font-size: 12.5px; color: var(--ink); line-height: 1.5; }
+.brief-erreur-detail {
+  margin: 8px 0 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  word-break: break-word;
+}
+.brief-erreur-actions { margin-top: 12px; }
 
 /* Modale d'import : état courant du cycle et du dépôt. */
 .esp-etat {

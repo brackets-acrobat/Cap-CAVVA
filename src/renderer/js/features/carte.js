@@ -117,6 +117,7 @@ function initMap() {
   seaplanesLayer = L.layerGroup().addTo(map);
   navaidsLayer   = L.layerGroup().addTo(map);
   _rangeLayer    = L.layerGroup().addTo(map);   // cercles de portée (magenta)
+  _briefLayer    = L.layerGroup().addTo(map);   // rayon de départ et repères du brief (ambre)
   routeLayer     = L.layerGroup().addTo(map);   // ligne de route départ → arrivée
   ajouterBoutonSuivi();
   ajouterControlesCarte();

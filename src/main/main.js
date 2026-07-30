@@ -17,6 +17,7 @@
 //   elevation.js    relief GLOBE et profil vertical
 //   declinaison.js  déclinaison magnétique (WMM)
 //   plan-io.js      sauvegarde et ouverture d'un plan de vol
+//   brief-source.js brief de la séance téléchargé depuis CAVVA
 //   updater.js      mise à jour automatique
 //
 // Si un handler ci-dessous dépasse trois lignes, c'est qu'il appartient à un
@@ -33,6 +34,7 @@ const msfsImport = require('./msfs-import');
 const airportsData = require('./airports-data');
 const siaImport = require('./sia-import');
 const siaData = require('./sia-data');
+const briefSource = require('./brief-source');
 const elevation = require('./elevation');
 const declinaison = require('./declinaison');
 const planIo = require('./plan-io');
@@ -184,6 +186,21 @@ ipcMain.handle('sia-ouvrir-dossier', async () => siaImport.ouvrirDossier());
 ipcMain.handle('sia-choisir-fichier', async () => siaImport.choisirFichier(fenetre));
 ipcMain.handle('sia-importer', async (e, chemin) =>
   siaImport.importer(chemin, versEmetteur(e, 'sia-progress')));
+
+// Briefs de séance (calendrier complet téléchargé depuis CAVVA, signature vérifiée)
+//
+// Les erreurs sont RENVOYÉES et non levées : l'IPC ne transporte que le message
+// d'une Error, et c'est le code (« unauthorized », « absent »…) qui décide de
+// ce que l'interface propose.
+ipcMain.handle('briefs-charger', async () => {
+  try {
+    const res = await briefSource.resoudreBriefs(config.apiKey, config.apiBaseUrl);
+    return { ok: true, ...res };
+  } catch (e) {
+    return { ok: false, code: e.code || 'network', message: e.message, url: briefSource.urlBriefs(config.apiBaseUrl) };
+  }
+});
+ipcMain.handle('brief-verifier-cle', async () => briefSource.verifierCle(config.apiKey, config.apiBaseUrl));
 
 // Relief
 ipcMain.handle('elevation-existe', async () => elevation.tuilesPresentes());

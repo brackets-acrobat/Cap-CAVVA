@@ -8,6 +8,9 @@
   "scripts": {
     "start": "electron .",
     "force-electron": "node force-electron.js",
+    "brief:cle": "node outils/cle-signature.js",
+    "brief:signer": "node outils/signer-brief.js",
+    "brief:essai": "node outils/serveur-brief-essai.js",
     "dist": "electron-builder",
     "publish": "electron-builder --publish always"
   },

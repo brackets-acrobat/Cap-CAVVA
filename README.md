@@ -15,8 +15,9 @@ suivi de l'avion en direct.
 - Import des **aéroports et navaids depuis MSFS 2024** (le simulateur est la source).
 - **Espaces aériens français** tracés en vectoriel, interrogeables, depuis l'export
   XML du SIA converti localement.
-- **Brief de la séance** téléchargé depuis CAVVA et vérifié par signature : type de
-  vol, aéroport d'arrivée, rayon de départ, zones actives.
+- **Briefs des séances** téléchargés depuis CAVVA et vérifiés par signature : le
+  calendrier complet, avec type de vol, aérodrome d'arrivée, rayon de départ et
+  zones actives.
 - Plan de vol tracé à la souris : points tournants nommables, étiquette de **cap
   magnétique** (déclinaison WMM locale) et distance sur chaque branche, tableau des
   legs, copie des points au presse-papier, profil vertical du relief.
@@ -89,12 +90,44 @@ Un fichier par fonctionnalité, des deux côtés.
 | `elevation.js` | Relief GLOBE et profil vertical |
 | `declinaison.js` | Déclinaison magnétique (WMM) |
 | `plan-io.js` | Sauvegarde et ouverture d'un plan (`.ccfp`) |
+| `brief-source.js` | Briefs de séance : téléchargement, clé, signature |
+| `brief-crypto.js` | Signature HMAC des briefs |
 | `updater.js` | Mise à jour automatique |
 
 `src/renderer/js/features/` porte une vingtaine de fichiers sur le même principe
 (`carte.js`, `route.js`, `etiquettes-legs.js`, `avion.js`…). L'ordre des `<script>`
 dans `index.html` fait la dépendance : pas de modules ES, portée globale partagée —
 convention reprise de NavXpressVFR.
+
+## Les briefs de séance
+
+Le site CAVVA publie `cap-cavva/briefs.json` : **le calendrier complet** des vols
+d'aéroclub, pas seulement le prochain. L'application le télécharge avec la clé du
+compte, **vérifie la signature avant d'interpréter quoi que ce soit**, et n'en
+garde aucune copie — le calendrier bouge, une séance s'annule, une zone change.
+
+Le panneau liste les séances et en laisse choisir une (la prochaine à venir, par
+défaut). La séance choisie trace son **rayon de départ autour de l'aérodrome
+d'arrivée** et met ses **zones actives en évidence** sur la carte comme dans le
+profil vertical — même si les filtres d'affichage les excluent.
+
+Les zones sont saisies en texte libre sur le site (`R45 S2 LANGRES`,
+`R46A R46B R46C`, `NON`). L'application les rapproche elle-même de l'export du
+SIA, par normalisation : **rien à changer côté site**. Vérifié sur les 42 vols
+publiés — 18 saisies, 18 rapprochées.
+
+Le format, les codes d'erreur et le contrôleur PHP à écrire sont dans
+**[FORMAT-BRIEF.md](FORMAT-BRIEF.md)**.
+
+Éprouver le client sans serveur CAVVA :
+
+```bash
+npm run brief:essai -- --cas=ok
+```
+
+puis, dans un autre terminal, `CAVVA_BASE_URL=http://127.0.0.1:8787 npm start`.
+`--cas=` joue aussi `entete`, `falsifie`, `absent`, `refuse`, `malforme` et
+`futur` — c'est là que se vérifie ce que l'application **refuse**.
 
 ## Crédits
 

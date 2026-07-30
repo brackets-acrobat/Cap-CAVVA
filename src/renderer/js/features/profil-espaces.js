@@ -147,6 +147,9 @@ function calculerEspacesProfil(wps) {
     f: espaceFiltres.familles,
     p: espaceFiltres.plancherMaxFt,
     c: espacesCharges() ? (_espacesData.meta || {}).effDate : null,
+    // Les zones actives échappent aux filtres : charger un brief change donc la
+    // liste des tranches, et doit invalider le cache au même titre qu'un filtre.
+    a: (typeof _clesActives !== 'undefined') ? [..._clesActives].sort() : null,
   });
   if (sig === _profilEspacesSig) return _profilEspacesBlocs;
 
@@ -208,7 +211,8 @@ function rendreEspacesProfil(blocs, X, Y, sol, yMax) {
 
     const x0 = X(bloc.d0), x1 = X(bloc.d1);
     const vedette = (typeof _zoneSurlignee !== 'undefined' && bloc.feature === _zoneSurlignee);
-    if (x1 - x0 < PROFIL_BLOC_MIN_PX && !vedette) continue;
+    const active = (typeof estZoneActive === 'function' && estZoneActive(p));
+    if (x1 - x0 < PROFIL_BLOC_MIN_PX && !vedette && !active) continue;
 
     // Une zone entièrement au-dessus du graphe n'a rien à y montrer.
     const dMil = (bloc.d0 + bloc.d1) / 2;
@@ -234,12 +238,20 @@ function rendreEspacesProfil(blocs, X, Y, sol, yMax) {
       continue;
     }
 
-    formes += `<path d="${forme}" fill="${fam.couleur}" `
-      + `fill-opacity="${forte ? 0.26 : 0.13}" stroke="${fam.couleur}" `
-      + `stroke-width="${forte ? 1.4 : 1}" stroke-opacity="0.85"/>`;
+    // Zone annoncée active par le brief : le même halo ambre que sur la carte,
+    // posé sous le bloc. Les deux vues désignent alors le même volume de la même
+    // manière — c'est tout l'intérêt de les regarder ensemble.
+    if (active) {
+      formes += `<path d="${forme}" fill="none" stroke="#f59e0b" stroke-width="5" stroke-opacity="0.75"/>`;
+    }
 
-    // Étiquette seulement s'il y a la place : sinon le survol renseigne.
-    if (x1 - x0 > 34 && yb - yh > 13) {
+    formes += `<path d="${forme}" fill="${fam.couleur}" `
+      + `fill-opacity="${active ? 0.34 : (forte ? 0.26 : 0.13)}" stroke="${fam.couleur}" `
+      + `stroke-width="${active ? 1.8 : (forte ? 1.4 : 1)}" stroke-opacity="0.85"/>`;
+
+    // Étiquette seulement s'il y a la place : sinon le survol renseigne. Une zone
+    // active est étiquetée dès qu'elle est dessinable.
+    if ((active && x1 - x0 > 18) || (x1 - x0 > 34 && yb - yh > 13)) {
       etiquettes += `<text x="${((x0 + x1) / 2).toFixed(1)}" y="${((yb + yh) / 2 + 3).toFixed(1)}" `
         + `text-anchor="middle" font-size="9" fill="${fam.couleur}" `
         + `style="paint-order:stroke;stroke:#f8fafc;stroke-width:2.5px">${escapeHtml(nom.slice(0, 14))}</text>`;

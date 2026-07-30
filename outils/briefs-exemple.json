@@ -1,0 +1,496 @@
+{
+  "format": 1,
+  "genere": "2026-07-30T09:47:38Z",
+  "briefs": [
+    {
+      "id": "2",
+      "date": "2026-09-02",
+      "typeVol": "VFR",
+      "rayonNm": 60,
+      "icaoArrivee": "LFHX",
+      "zones": [
+        "R 144 A"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "3",
+      "date": "2026-09-09",
+      "typeVol": "VFR",
+      "rayonNm": 60,
+      "icaoArrivee": "LFHO",
+      "zones": [
+        "NON"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "4",
+      "date": "2026-09-16",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "LFCG",
+      "zones": [
+        "R46 F3"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "5",
+      "date": "2026-09-23",
+      "typeVol": "IFR ou Z",
+      "rayonNm": 150,
+      "icaoArrivee": "LFLW",
+      "zones": [],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "6",
+      "date": "2026-09-30",
+      "typeVol": "VFR de nuit",
+      "rayonNm": 80,
+      "icaoArrivee": "LFLW",
+      "zones": [],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "7",
+      "date": "2026-10-07",
+      "typeVol": "VFR",
+      "rayonNm": 60,
+      "icaoArrivee": "LFFN",
+      "zones": [
+        "R45 S2 LANGRES"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "8",
+      "date": "2026-10-14",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "LFAS",
+      "zones": [
+        "NON"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "9",
+      "date": "2026-10-21",
+      "typeVol": "VFR",
+      "rayonNm": 70,
+      "icaoArrivee": "LFIG",
+      "zones": [
+        "R590A MENDE SUD",
+        "R590B MENDE NORD"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "10",
+      "date": "2026-10-28",
+      "typeVol": "IFR ou Z",
+      "rayonNm": 150,
+      "icaoArrivee": "LFDN",
+      "zones": [],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "11",
+      "date": "2026-11-04",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "LFQD",
+      "zones": [
+        "NON"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "12",
+      "date": "2026-11-11",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "LFSH",
+      "zones": [
+        "R45 N4 MOSELLE",
+        "R152 ALSACE"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "13",
+      "date": "2026-11-18",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "LFDT",
+      "zones": [
+        "NON"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "14",
+      "date": "2026-11-25",
+      "typeVol": "VFR",
+      "rayonNm": 70,
+      "icaoArrivee": "LFQF",
+      "zones": [
+        "R45B AUTUNOIS"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "15",
+      "date": "2026-12-02",
+      "typeVol": "IFR ou Z",
+      "rayonNm": 150,
+      "icaoArrivee": "LFAC",
+      "zones": [],
+      "notes": "Possibilité de partir de la Belgique ou du Royaume-Uni",
+      "fichier": null
+    },
+    {
+      "id": "16",
+      "date": "2026-12-09",
+      "typeVol": "VFR",
+      "rayonNm": 60,
+      "icaoArrivee": "LFAI",
+      "zones": [
+        "NON"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "17",
+      "date": "2026-12-16",
+      "typeVol": "VFR de nuit",
+      "rayonNm": 80,
+      "icaoArrivee": "LFBE",
+      "zones": [
+        "NON"
+      ],
+      "notes": "On termine l'année avec un VFR de nuit pour se mettre dans l'ambiance feutrée de Noël. Bonnes vacances à tous et rendez-vous en janvier.",
+      "fichier": null
+    },
+    {
+      "id": "18",
+      "date": "2027-01-06",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "LFEP",
+      "zones": [
+        "NON"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "19",
+      "date": "2027-01-13",
+      "typeVol": "VFR",
+      "rayonNm": 60,
+      "icaoArrivee": "LFHH",
+      "zones": [
+        "R3204A PILAT ONDE"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "20",
+      "date": "2027-01-20",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "LFID",
+      "zones": [
+        "R46A R46B R46C"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "21",
+      "date": "2027-01-27",
+      "typeVol": "IFR ou Z",
+      "rayonNm": 150,
+      "icaoArrivee": "LFGJ",
+      "zones": [],
+      "notes": "Possibilité de partir de Suisse ou d’Allemagne",
+      "fichier": null
+    },
+    {
+      "id": "22",
+      "date": "2027-02-03",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "LFIS",
+      "zones": [
+        "NON"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "41",
+      "date": "2027-02-10",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "KRHP",
+      "zones": [
+        "NON"
+      ],
+      "notes": "Départ de KRYY – Touchers optionnels sur KJZP KDJZ",
+      "fichier": null
+    },
+    {
+      "id": "42",
+      "date": "2027-02-17",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "KGCY",
+      "zones": [
+        "NON"
+      ],
+      "notes": "Départ de KRHP – Touchers optionnels sur KGKT KMOR",
+      "fichier": null
+    },
+    {
+      "id": "43",
+      "date": "2027-02-24",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "KMKJ",
+      "zones": [
+        "NON"
+      ],
+      "notes": "Départ de KGCY – Touchers optionnels sur OA4 (c’est un zéro) KVJI",
+      "fichier": null
+    },
+    {
+      "id": "23",
+      "date": "2027-03-03",
+      "typeVol": "IFR ou Z",
+      "rayonNm": 150,
+      "icaoArrivee": "LFKB",
+      "zones": [],
+      "notes": "Possibilité de partir d'Italie.",
+      "fichier": null
+    },
+    {
+      "id": "24",
+      "date": "2027-03-10",
+      "typeVol": "VFR",
+      "rayonNm": 70,
+      "icaoArrivee": "LFIK",
+      "zones": [
+        "R49 A2 COGNAC"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "25",
+      "date": "2027-03-17",
+      "typeVol": "VFR",
+      "rayonNm": 70,
+      "icaoArrivee": "LFNX",
+      "zones": [
+        "R46D"
+      ],
+      "notes": "Vous avez obtenu l’autorisation de l’exploitant pour vous poser sur les installations de Bédarieux.",
+      "fichier": null
+    },
+    {
+      "id": "26",
+      "date": "2027-03-24",
+      "typeVol": "VFR de nuit",
+      "rayonNm": 70,
+      "icaoArrivee": "LFBN",
+      "zones": [
+        "NON"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "27",
+      "date": "2027-03-31",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "LFRU",
+      "zones": [
+        "R57 BRETAGNE"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "28",
+      "date": "2027-04-07",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "LFIP",
+      "zones": [
+        "NON"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "29",
+      "date": "2027-04-14",
+      "typeVol": "IFR ou Z",
+      "rayonNm": 150,
+      "icaoArrivee": "LFRD",
+      "zones": [],
+      "notes": "Possibilité de partir du Royaume-Uni.",
+      "fichier": null
+    },
+    {
+      "id": "30",
+      "date": "2027-04-21",
+      "typeVol": "VFR",
+      "rayonNm": 70,
+      "icaoArrivee": "LFJB",
+      "zones": [
+        "NON"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "31",
+      "date": "2027-04-28",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "LFJH",
+      "zones": [
+        "NON"
+      ],
+      "notes": "Vous avez obtenu l’autorisation de l’exploitant pour vous poser sur les installations de Cazères.",
+      "fichier": null
+    },
+    {
+      "id": "32",
+      "date": "2027-05-05",
+      "typeVol": "IFR ou Z",
+      "rayonNm": 150,
+      "icaoArrivee": "LFOU",
+      "zones": [
+        "NON"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "33",
+      "date": "2027-05-12",
+      "typeVol": "VFR",
+      "rayonNm": 60,
+      "icaoArrivee": "LFPA",
+      "zones": [
+        "NON"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "34",
+      "date": "2027-05-19",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "LFQL",
+      "zones": [],
+      "notes": "Possibilité de partir de Belgique.",
+      "fichier": null
+    },
+    {
+      "id": "35",
+      "date": "2027-05-26",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "LFXB",
+      "zones": [
+        "R49 L1 COGNAC"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "36",
+      "date": "2027-06-02",
+      "typeVol": "VFR",
+      "rayonNm": 80,
+      "icaoArrivee": "LFKX",
+      "zones": [
+        "NON"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "37",
+      "date": "2027-06-09",
+      "typeVol": "VFR",
+      "rayonNm": 60,
+      "icaoArrivee": "LFCN",
+      "zones": [
+        "R46A",
+        "R46B",
+        "R46C"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "38",
+      "date": "2027-06-16",
+      "typeVol": "VFR de nuit",
+      "rayonNm": 80,
+      "icaoArrivee": "LFDJ",
+      "zones": [
+        "NON"
+      ],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "39",
+      "date": "2027-06-23",
+      "typeVol": "IFR ou Z",
+      "rayonNm": 150,
+      "icaoArrivee": "LFFK",
+      "zones": [],
+      "notes": null,
+      "fichier": null
+    },
+    {
+      "id": "40",
+      "date": "2027-06-30",
+      "typeVol": "VFR",
+      "rayonNm": 70,
+      "icaoArrivee": "LFNB",
+      "zones": [
+        "R592 CANTAL"
+      ],
+      "notes": null,
+      "fichier": null
+    }
+  ]
+}

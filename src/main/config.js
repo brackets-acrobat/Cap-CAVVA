@@ -62,16 +62,26 @@ function lireFichier(p) {
 }
 
 // Charge la config effective.
-// Priorité : settings.json > config.json > config.example.json > défauts.
+// Priorité : CAVVA_API_KEY > settings.json > config.json > config.example.json > défauts.
+//
+// CAVVA_API_KEY est le pendant de CAVVA_BASE_URL (cf. brief-source.js) : viser une
+// instance locale ne sert à rien si la clé enregistrée n'y est pas connue, et la
+// remplacer dans l'UI ferait perdre celle de production — la modale ne réaffiche
+// jamais le secret stocké. La variable ne touche donc à aucun fichier : le temps
+// d'un `npm start`, et c'est tout.
 function chargerConfig() {
   const exemple = lireFichier(path.join(ROOT, 'config.example.json'));
   const local = lireFichier(path.join(ROOT, 'config.json'));
   const reglages = lireFichier(cheminSettings());
   const cfg = { ...DEFAULTS, ...(exemple || {}), ...(local || {}), ...(reglages || {}) };
 
+  const cleEnv = (process.env.CAVVA_API_KEY || '').trim();
+  if (cleEnv) cfg.apiKey = cleEnv;
+
   const cleConfiguree = !!cfg.apiKey && cfg.apiKey !== 'REMPLACE-MOI-PAR-TA-CLE-CAVVA';
 
-  const source = (reglages && reglages.apiKey) ? 'paramètres'
+  const source = cleEnv ? 'CAVVA_API_KEY'
+    : (reglages && reglages.apiKey) ? 'paramètres'
     : (local ? 'config.json' : (exemple ? 'config.example.json' : 'défauts'));
 
   return { ...cfg, _source: source, _cleConfiguree: cleConfiguree };

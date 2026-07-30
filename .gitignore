@@ -12,6 +12,10 @@ out/
 # final télécharge les siens sur le site du SIA (rien n'est redistribué).
 donnees-sia/
 
+# Signature du brief d'exemple : régénérée par `npm run brief:signer`, elle
+# changerait à chaque retouche du fichier signé.
+outils/briefs-exemple.json.sig
+
 # Divers OS / éditeurs
 .DS_Store
 Thumbs.db

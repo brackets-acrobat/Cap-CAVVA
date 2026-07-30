@@ -35,6 +35,10 @@
       <button id="btn-profil" class="btn btn-icon" data-i18n-title="vertProfileToggle" title="Afficher le profil vertical" aria-pressed="false">
         <i class="ph-light ph-chart-line"></i>
       </button>
+      <!-- Brief de la séance : téléchargé depuis CAVVA, signature vérifiée -->
+      <button id="btn-brief" class="btn btn-icon" data-i18n-title="briefToggle" title="Brief de la séance" aria-pressed="false">
+        <i class="ph-light ph-clipboard-text"></i>
+      </button>
     </div>
     <div class="conn">
       <!-- Bouton « ? » : ouvre la modale « À propos » (comme NavXpressVFR) -->
@@ -118,6 +122,19 @@
         </table>
         <p id="legs-empty" class="legs-empty" data-i18n="legsEmpty" hidden>Aucun plan de vol.</p>
       </div>
+    </aside>
+    <!-- Panneau « Briefs des séances » : même tiers droit que le plan de vol,
+         les deux ne s'affichent jamais ensemble -->
+    <aside id="brief-panel" class="legs-panel brief-panel" hidden>
+      <div class="legs-head">
+        <span class="legs-title"><i class="ph-light ph-clipboard-text"></i> <span data-i18n="briefTitle">Briefs des séances</span></span>
+        <span class="brief-head-actions">
+          <button id="brief-refresh" class="legs-close" type="button" data-i18n-title="briefRefresh" title="Actualiser"><i class="ph-light ph-arrows-clockwise"></i></button>
+          <button id="brief-close" class="legs-close" type="button" data-i18n-title="briefClose" title="Masquer"><i class="ph-light ph-x"></i></button>
+        </span>
+      </div>
+      <div id="brief-corps" class="brief-corps"></div>
+      <p id="brief-etat" class="brief-etat"></p>
     </aside>
     <!-- Profil vertical : bande en bas de la carte (relief GLOBE + altitudes prévues) -->
     <section id="vp-panel" class="vp-panel" hidden>
@@ -358,6 +375,8 @@
   <script src="js/features/vent.js"></script>
   <script src="js/features/imports-msfs.js"></script>
   <script src="js/features/espaces-import.js"></script>
+  <script src="js/features/brief-zones.js"></script>
+  <script src="js/features/brief-seance.js"></script>
   <script src="js/features/cle-api.js"></script>
   <script src="js/features/apropos.js"></script>
   <script src="js/features/maj.js"></script>

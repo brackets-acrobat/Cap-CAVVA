@@ -95,7 +95,13 @@ function espacesCharges() {
 
 function zoneAffichable(p) {
   const f = familleDeZone(p);
-  if (!f || !espaceFiltres.familles[f.id]) return false;
+  if (!f) return false;
+  // Une zone que le brief annonce ACTIVE échappe aux filtres : elle concerne la
+  // séance, et la masquer derrière un réglage de plancher serait le seul cas où
+  // l'application cacherait ce qu'elle est faite pour montrer. (brief-seance.js
+  // est chargé après ce fichier — d'où la garde.)
+  if (typeof estZoneActive === 'function' && estZoneActive(p)) return true;
+  if (!espaceFiltres.familles[f.id]) return false;
   const max = espaceFiltres.plancherMaxFt;
   if (Number.isFinite(max) && plancherApproxFt(p) > max) return false;
   return true;
@@ -103,17 +109,23 @@ function zoneAffichable(p) {
 
 function styleZone(p, famille) {
   const forte = (p.type === 'R' || p.type === 'P');
+  const active = (typeof estZoneActive === 'function' && estZoneActive(p));
   const motif = forte ? hachure(famille.couleur) : null;
   return {
     renderer: _espacesRenderer,
     interactive: false,
     color: famille.couleur,
-    weight: forte ? 2 : 1.2,
-    opacity: 0.9,
+    weight: active ? 2.5 : (forte ? 2 : 1.2),
+    opacity: active ? 1 : 0.9,
     fillColor: motif || famille.couleur,
-    fillOpacity: motif ? 0.55 : (forte ? 0.16 : 0.07),
+    fillOpacity: motif ? 0.55 : (active ? 0.3 : (forte ? 0.16 : 0.07)),
   };
 }
+
+// Halo ambre des zones actives de la séance : un anneau épais posé SOUS la zone,
+// qui la fait ressortir d'un empilement sans en changer la couleur de famille —
+// on doit continuer à lire « R rouge » tout en voyant qu'elle est active ce soir.
+const HALO_ACTIVE = { renderer: null, interactive: false, color: '#f59e0b', weight: 7, opacity: 0.75, fill: false };
 
 function tracerEspaces() {
   if (!espacesLayer) return;
@@ -127,6 +139,10 @@ function tracerEspaces() {
     const p = feature.properties;
     if (!zoneAffichable(p)) continue;
     const famille = familleDeZone(p);
+    // Halo d'abord : ajouté avant la zone, il reste dessous.
+    if (typeof estZoneActive === 'function' && estZoneActive(p)) {
+      L.geoJSON(feature, { style: { ...HALO_ACTIVE, renderer: _espacesRenderer } }).addTo(espacesLayer);
+    }
     // La couche est mémorisée SUR la feature : c'est ce qui permet ensuite de
     // relier une ligne du panneau au polygone correspondant sur la carte.
     feature.__couche = L.geoJSON(feature, { style: styleZone(p, famille) }).addTo(espacesLayer);

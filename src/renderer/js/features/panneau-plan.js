@@ -183,6 +183,9 @@ function ouvrirFermerLegs(ouvrir) {
   legsBtn.setAttribute('aria-pressed', String(ouvrir));
   // Décale les contrôles Leaflet (haut-droite) hors du panneau tant qu'il est ouvert.
   document.querySelector('main').classList.toggle('legs-open', ouvrir);
+  // Les deux panneaux occupent le même tiers droit : l'un chasse l'autre.
+  // (brief-seance.js est chargé après ce fichier — d'où la garde.)
+  if (ouvrir && typeof fermerBrief === 'function') fermerBrief();
   if (ouvrir) rafraichirTableauLegs();
   mettreAJourProfilVertical();   // la largeur de la bande profil change avec ce panneau
 }

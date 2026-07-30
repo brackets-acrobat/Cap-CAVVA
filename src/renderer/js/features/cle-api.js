@@ -34,7 +34,20 @@ $('btn-apikey-save').addEventListener('click', async () => {
     st.className = 'modal-status is-ok';
     st.textContent = res.cleConfiguree ? t('apiKeySaved') : t('apiKeyCleared');
     st.hidden = false;
-    setTimeout(() => { $('apikey-overlay').hidden = true; }, 1400);
+
+    // Enregistrée ne veut pas dire acceptée. Le serveur a le dernier mot, et le
+    // savoir maintenant vaut mieux que le découvrir mercredi soir : on interroge
+    // la seule signature du brief (64 octets), pas le brief entier.
+    if (res.cleConfiguree) {
+      const verdict = await window.cap.briefVerifierCle();
+      if (verdict.ok) {
+        st.textContent = t(verdict.code === 'absent' ? 'apiKeyOkNoBrief' : 'apiKeyOk');
+      } else {
+        st.className = 'modal-status is-warn';
+        st.textContent = t(verdict.code === 'unauthorized' ? 'apiKeyRefused' : 'apiKeyUnreachable');
+      }
+    }
+    setTimeout(() => { $('apikey-overlay').hidden = true; }, 2200);
   } else {
     st.className = 'modal-status is-error';
     st.textContent = t('apiKeyErr').replace('{err}', res.error || '?');

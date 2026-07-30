@@ -45,6 +45,10 @@ contextBridge.exposeInMainWorld('cap', {
   siaImporter: (chemin) => ipcRenderer.invoke('sia-importer', chemin),
   onSiaProgress: (cb) => abonner('sia-progress', cb),
 
+  // Briefs de séance (CAVVA) — le calendrier complet, en une fois
+  briefsCharger: () => ipcRenderer.invoke('briefs-charger'),
+  briefVerifierCle: () => ipcRenderer.invoke('brief-verifier-cle'),
+
   // Relief (jeu de données GLOBE) et profil vertical
   elevationExiste: () => ipcRenderer.invoke('elevation-existe'),
   importerElevation: () => ipcRenderer.invoke('importer-elevation'),
