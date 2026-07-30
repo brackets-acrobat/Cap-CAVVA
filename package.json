@@ -1,0 +1,76 @@
+{
+  "name": "cap-cavva",
+  "version": "1.0.0",
+  "description": "Cap CAVVA — poste de l'organisateur et brief exécutable du vol de club du mercredi soir (MSFS 2024, SimConnect, espaces aériens SIA)",
+  "main": "src/main/main.js",
+  "author": "Cyril MILANI",
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "start": "electron .",
+    "force-electron": "node force-electron.js",
+    "dist": "electron-builder",
+    "publish": "electron-builder --publish always"
+  },
+  "keywords": [
+    "electron",
+    "msfs",
+    "simconnect",
+    "vfr",
+    "espaces-aeriens",
+    "sia",
+    "cavva"
+  ],
+  "dependencies": {
+    "electron-updater": "^6.3.9",
+    "extract-zip": "^2.0.1",
+    "geomagnetism": "^0.2.0",
+    "node-simconnect": "^4.2.0",
+    "sax": "^1.4.1"
+  },
+  "devDependencies": {
+    "electron": "^30.5.1",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "me.sixk.cavva.cap",
+    "productName": "Cap CAVVA",
+    "copyright": "Copyright © 2026 Cyril MILANI — GPL-3.0-or-later",
+    "artifactName": "Cap-CAVVA-Setup-${version}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "**/*",
+      "!outils/**",
+      "!donnees-sia/**",
+      "!force-electron.js",
+      "!dist/**",
+      "!config.json",
+      "!config.example.json",
+      "!**/*.log",
+      "!README.md"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Cap CAVVA",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "brackets-acrobat",
+      "repo": "Cap-CAVVA"
+    }
+  }
+}

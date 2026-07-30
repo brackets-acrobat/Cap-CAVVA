@@ -1,0 +1,11 @@
+{
+  "_comment": "Copie ce fichier en config.json et renseigne ta clé CAVVA. config.json est gitignoré (il contient un secret).",
+
+  "apiBaseUrl": "https://cavva.sixk.me",
+  "_apiBaseUrl_comment": "Racine du site CAVVA, d'où vient le brief de la séance. Viser une instance locale le temps d'un essai est possible : la signature du brief reste vérifiée dans tous les cas.",
+
+  "apiKey": "REMPLACE-MOI-PAR-TA-CLE-CAVVA",
+
+  "dossierTravail": "",
+  "_dossierTravail_comment": "Où ranger data/, sia/ et settings.json. Vide = sous-dossier « Cap CAVVA » dans Mes documents."
+}

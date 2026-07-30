@@ -1,0 +1,18 @@
+# Dépendances
+node_modules/
+
+# Configuration locale : contient la clé CAVVA → JAMAIS committée
+config.json
+
+# Build / distribution
+dist/
+out/
+
+# Exports SIA téléchargés pour le développement : volumineux, et l'utilisateur
+# final télécharge les siens sur le site du SIA (rien n'est redistribué).
+donnees-sia/
+
+# Divers OS / éditeurs
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,932 @@
+/*
+ * Cap CAVVA
+ *
+ * Charte graphique de l'application Tours CAVVA : barre ardoise, boutons pleins
+ * bleus, panneaux clairs, texte ardoise. Les deux applications de bureau se
+ * ressemblent donc, ce qui est le but.
+ *
+ * Les noms de variables historiques (--bg, --panel, --ink…) sont conservés : ils
+ * sont employés partout dans ce fichier, et les renommer serait une refonte, pas
+ * un changement de couleur. Ils désignent désormais la palette de Tours.
+ */
+
+:root {
+  /* --- Palette relevée sur l'appli Tours --- */
+  --ardoise:      #1f2933;   /* barre, entêtes de table et de modale */
+  --ardoise-line: #3e4c59;   /* filets sur fond ardoise */
+  --bleu:         #2563eb;   /* action principale */
+  --bleu-h:       #1d4ed8;
+  --gris:         #64748b;   /* action secondaire */
+  --gris-h:       #475569;
+  --violet:       #7c3aed;   /* clé d'accès */
+  --violet-h:     #6d28d9;
+  --vert:         #059669;   /* bascule de langue, état favorable */
+  --vert-h:       #047857;
+  --rouge:        #e11900;   /* action destructrice */
+  --rouge-h:      #b91500;
+  --sep:          #e2e8f0;   /* séparateur à l'intérieur d'un panneau */
+  --bande:        #eef2f7;   /* bandeaux secondaires, champs */
+  --off-bg:       #cbd5e1;   /* bouton inactif */
+  --off-ink:      #94a3b8;
+
+  /* --- Noms historiques, remappés sur la palette ci-dessus --- */
+  --bg:           #f8fafc;
+  --panel:        #ffffff;   /* panneaux flottants et modales */
+  --panel-2:      var(--bande);
+  --accent:       var(--bleu);
+  --accent-hover: var(--bleu-h);
+  --ink:          #1f2933;
+  --title:        #1f2933;
+  --muted:        var(--gris);
+  --line:         #cbd5e1;
+  --danger:       var(--rouge);
+  --warn:         #b45309;
+  --mono:         'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 14px;
+  /* Plein écran en colonnes : header · subbar · carte (extensible) · statusbar */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+h1, h2, h3 { color: var(--title); }
+
+/* ---- Icônes Phosphor (vertes par défaut, alignées au texte) — comme le site ---- */
+i[class^="ph-"], i[class*=" ph-"] {
+  color: var(--accent);
+  vertical-align: middle;
+  line-height: 1;
+}
+/* Dans un bouton plein, l'icône suit la couleur du texte. */
+.btn i[class^="ph-"] { color: inherit; }
+
+/* Ascenseurs discrets */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: var(--bande); border-left: 1px solid var(--line); }
+*::-webkit-scrollbar-thumb { background: var(--off-bg); border-radius: 6px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* --- Barre supérieure (= #toolbar de l'appli Tours) --- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem 1rem;
+  flex-wrap: wrap;
+  padding: .75rem 1.25rem;
+  /* Ardoise, comme la barre d'outils de Tours. Tout ce qu'elle porte passe donc
+     en clair : un bouton plein s'y voit, un bouton à contour non. */
+  background: var(--ardoise);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, .25);
+  z-index: 1000;
+}
+.topbar i[class^="ph-"], .topbar i[class*=" ph-"] { color: #fff; }
+.brand { display: flex; align-items: center; gap: 12px; }
+/* Hauteur BORNÉE : elle fixe celle de la barre supérieure, et la largeur suit
+   d'elle-même pour garder les proportions de l'image. */
+.brand-logo { display: block; height: 100px; width: auto; }
+
+.conn { display: flex; align-items: center; gap: 10px; }
+
+/* États de connexion portés par le bouton MSFS (remplace pastille + texte) :
+   déconnecté = rouge · connexion = orange · connecté = vert. */
+/* L'état de la connexion est porté par le fond du bouton : rouge déconnecté,
+   ambre en cours, vert connecté. */
+/* Sélecteurs doublés (.btn.btn-state-*) : à spécificité égale, c'est l'ordre
+   dans le fichier qui tranche, et .btn est déclaré plus bas — il écraserait ces
+   couleurs d'état. */
+.btn.btn-state-off  { background: var(--rouge); color: #fff; }
+.btn.btn-state-off:hover,  .btn.btn-state-off:focus-visible  { background: var(--rouge-h); }
+.btn.btn-state-wait { background: var(--warn); color: #fff; }
+.btn.btn-state-wait:hover, .btn.btn-state-wait:focus-visible { background: #92400e; }
+.btn.btn-state-on   { background: var(--vert); color: #fff; }
+.btn.btn-state-on:hover,   .btn.btn-state-on:focus-visible   { background: var(--vert-h); }
+
+/* --- Toggle bilingue FR | EN (pilule, façon NavXpress, accent vert) --- */
+.btn-lang {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--vert);
+  border: 1px solid var(--vert);
+  border-radius: 20px;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, .75);
+  letter-spacing: .5px;
+  user-select: none;
+  transition: border-color .2s, background-color .2s;
+}
+.btn-lang:hover { background-color: var(--vert-h); border-color: var(--vert-h); }
+.lang-separator { color: rgba(255, 255, 255, .5); }
+.lang-active { color: #fff; }
+
+/* --- Boutons (= .btn du web : contour vert, survol plein vert texte sombre) --- */
+/* Bouton PLEIN : c'est la forme de Tours, et la seule lisible à la fois sur la
+   barre ardoise et sur un panneau clair. */
+.btn {
+  display: inline-block;
+  padding: .5rem 1.1rem;
+  font: inherit;
+  font-weight: 600;
+  color: #fff;
+  background: var(--bleu);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color .15s ease;
+}
+.btn:hover,
+.btn:focus-visible { background: var(--bleu-h); outline: none; }
+.btn:hover i[class^="ph-"] { color: #fff; }
+.btn-accent { background: var(--bleu); color: #fff; }
+.btn-accent:hover { background: var(--bleu-h); }
+
+/* Bouton-icône secondaire (import, à propos, panneaux) : gris ardoise. */
+.btn-icon { background: var(--gris); }
+.btn-icon:hover { background: var(--gris-h); }
+
+/* La clé d'accès prend le violet de Tours. */
+#btn-api-key { background: var(--violet); }
+#btn-api-key:hover { background: var(--violet-h); }
+
+/* Bouton-icône (import) : carré, icône 20px */
+.btn-icon { padding: .45rem .6rem; line-height: 0; }
+.btn-icon i[class^="ph-"] { font-size: 20px; }
+
+/* Menu déroulant d'import (aéroports / navaids) */
+.import-menu { position: relative; display: inline-flex; }
+.dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1100;
+  min-width: 200px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .18);
+}
+.dropdown[hidden] { display: none; }   /* l'attribut hidden doit l'emporter sur display:flex */
+.dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: .5rem .7rem;
+  font: inherit;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dropdown-item:hover,
+.dropdown-item:focus-visible {
+  background: var(--accent);
+  color: #fff;
+  outline: none;
+}
+
+/* --- Second bandeau : données live (lat / lon / altitude AMSL) --- */
+.subbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 28px;
+  padding: 8px 1.25rem;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line);
+}
+.subbar-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.subbar-item i[class^="ph-"] { font-size: 1.05em; }
+.subval {
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+}
+
+/* Champs ICAO départ / arrivée (plan) dans le second bandeau */
+.subbar-field {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.subbar-flabel {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.icao-input {
+  width: 70px;
+  padding: 2px 6px;
+  font-family: var(--mono);
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  outline: none;
+}
+.icao-input:focus { border-color: var(--accent); }
+.icao-input::placeholder { color: var(--muted); letter-spacing: 2px; }
+
+/* Boutons « Ouvrir / Sauvegarder le plan de vol » — tout à droite du bandeau */
+.subbar-actions {
+  margin-left: auto;        /* pousse le groupe complètement à droite */
+  align-self: center;
+  display: inline-flex;
+  gap: 6px;
+}
+.subbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 7px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  cursor: pointer;
+}
+.subbar-btn:hover { border-color: var(--accent); background: var(--panel); }
+.subbar-btn i[class^="ph-"] { font-size: 18px; }
+.subbar-btn:disabled { opacity: .4; cursor: default; }
+.subbar-btn:disabled:hover { border-color: var(--line); background: transparent; }
+
+/* Menu contextuel (clic droit sur la carte) */
+.map-ctx-menu {
+  position: fixed;
+  z-index: 1200;
+  min-width: 210px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .18);
+}
+.map-ctx-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: .4rem .6rem;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.map-ctx-item:hover { background: var(--panel-2); color: var(--accent); }
+
+/* Étiquette de leg (cap magnétique + distance) au milieu du segment de route.
+   pointer-events:none → ne bloque pas le clic-glisser de création de point. */
+.leg-badge-wrap { pointer-events: none; }
+.leg-badge {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 2px 5px;
+  background: #ff0000;
+  border: 1px solid #ffffff;
+  color: #ffffff;
+  font: 11px/13px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  white-space: nowrap;
+  text-align: center;
+  transform-origin: center center;
+  pointer-events: none;
+}
+
+/* --- Contenu : la carte occupe tout l'espace restant --- */
+main { flex: 1; min-height: 0; padding: 0; position: relative; }
+#map { width: 100%; height: 100%; background: #e8edf2; }   /* neutre clair pendant le chargement des tuiles */
+
+/* --- Bouton toggle du plan de vol : accentué quand le panneau est ouvert --- */
+#btn-legs.is-active { background: var(--bleu); color: #fff; }
+#btn-legs.is-active i[class^="ph-"] { color: #fff; }
+
+/* --- Panneau « Plan de vol » : tiers droit de la carte, pleine hauteur --- */
+.legs-panel {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 33.333%;
+  min-width: 300px;
+  z-index: 900;                 /* au-dessus des tuiles/marqueurs, sous les contrôles Leaflet (1000) */
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, .97);
+  border-left: 1px solid var(--accent);
+  box-shadow: -6px 0 20px rgba(15, 23, 42, .18);
+}
+.legs-panel[hidden] { display: none; }
+
+/* Panneau ouvert : décale les contrôles carte (haut-droite) juste à gauche du
+   panneau (largeur = max(33.333%, 300px), comme .legs-panel) pour les garder cliquables. */
+main.legs-open .leaflet-top.leaflet-right { right: max(33.333%, 300px); transition: right .15s ease; }
+.leaflet-top.leaflet-right { transition: right .15s ease; }
+.legs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.legs-title { display: inline-flex; align-items: center; gap: 6px; color: var(--title); font-weight: 700; font-size: 14px; }
+.legs-total { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.legs-total-num { color: var(--accent); font-family: var(--mono); font-weight: 700; }
+.legs-close {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 5px; background: transparent; border: 1px solid var(--line);
+  border-radius: 5px; cursor: pointer;
+}
+.legs-close:hover { border-color: var(--accent); background: var(--panel-2); }
+.legs-close i[class^="ph-"] { font-size: 16px; }
+
+.legs-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+.legs-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.legs-table thead th {
+  position: sticky; top: 0; z-index: 1;
+  padding: 6px 8px; text-align: left;
+  background: var(--panel-2); color: var(--muted);
+  font-weight: 600; border-bottom: 1px solid var(--line);
+}
+.legs-table th.legs-num, .legs-table td.legs-num { text-align: right; font-family: var(--mono); }
+.legs-table td {
+  padding: 6px 8px; color: var(--ink);
+  border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+.legs-table td.legs-num { color: var(--accent); }
+.legs-table tbody tr:hover td { background: var(--bande); }
+
+/* État du leg dans le tableau (aligné sur les couleurs carte) :
+   actif = surbrillance rouge, déjà parcouru = grisé, à venir = normal. */
+.legs-table tr.leg-row-active td { background: #fde68a; }   /* étape en cours, comme dans Tours */
+.legs-table tr.leg-row-active td.legs-name { color: #7c2d12; font-weight: 700; }
+.legs-table tr.leg-row-past td,
+.legs-table tr.leg-row-past td.legs-num,
+.legs-table tr.leg-row-past td.legs-name { color: var(--muted); opacity: .6; }
+
+/* Cellules éditables (nom de point tournant, altitude de leg) : double-clic */
+.legs-table td.is-editable { cursor: text; }
+.legs-table td.is-editable:hover { color: var(--accent); text-decoration: underline dotted; text-underline-offset: 2px; }
+.legs-cell-input {
+  width: 100%; box-sizing: border-box;
+  padding: 1px 3px; background: var(--panel-2);
+  border: 1px solid var(--accent); border-radius: 3px;
+  color: var(--title); font: inherit;
+}
+.legs-cell-input:focus { outline: none; }
+
+.legs-empty { padding: 16px 12px; color: var(--muted); font-size: 13px; }
+.legs-empty[hidden] { display: none; }
+
+/* --- Bouton toggle du profil vertical : accentué quand ouvert --- */
+#btn-profil.is-active { background: var(--bleu); color: #fff; }
+#btn-profil.is-active i[class^="ph-"] { color: #fff; }
+
+/* --- Panneau « Profil vertical » : bande en bas de la carte --- */
+.vp-panel {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 850;                 /* au-dessus des tuiles, sous le panneau des legs (900) */
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, .97);
+  border-top: 1px solid var(--accent);
+  box-shadow: 0 -6px 20px rgba(15, 23, 42, .18);
+}
+.vp-panel[hidden] { display: none; }
+main.legs-open .vp-panel { right: max(33.333%, 300px); }   /* laisse la place au panneau des legs */
+
+/* Profil ouvert : remonte les contrôles Leaflet du bas (barre d'échelle km/mi/NM,
+   attribution) juste au-dessus de la bande, pour ne pas les chevaucher. */
+.leaflet-bottom { transition: bottom .15s ease; }
+main.profil-open .leaflet-bottom { bottom: var(--vp-h, 210px); }
+
+/* Panneau du profil ouvert : les échelles (km / mi / NM) s'effacent. Elles
+   occupent le même coin bas-gauche que la bande du profil, et une échelle
+   horizontale n'a rien à dire pendant qu'on lit une coupe verticale.
+   L'attribution des tuiles, elle, reste — d'où le décalage ci-dessus. */
+.leaflet-control-scale { transition: opacity .15s ease; }
+main.profil-open .leaflet-control-scale { opacity: 0; visibility: hidden; }
+
+.vp-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel);
+}
+.vp-title { display: inline-flex; align-items: center; gap: 6px; color: var(--title); font-weight: 700; font-size: 13px; }
+.vp-close {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 5px; background: transparent; border: 1px solid var(--line);
+  border-radius: 5px; cursor: pointer;
+}
+.vp-close:hover { border-color: var(--accent); background: var(--panel-2); }
+.vp-close i[class^="ph-"] { font-size: 16px; }
+
+.vp-graph { padding: 8px 10px 10px; }
+.vp-empty { color: var(--muted); font-size: 12px; padding: 20px 6px; text-align: center; }
+.vp-summary { color: var(--ink); font-size: 12px; margin-bottom: 6px; }
+.vp-summary-warn { color: var(--warn); font-weight: 600; }
+
+/* Indicateur de vent : centré horizontalement, même ligne que les menus carte */
+.wind-indicator {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 1px 5px rgba(15, 23, 42, .18);
+  pointer-events: none;   /* ne bloque pas l'interaction carte */
+}
+.wind-indicator[hidden] { display: none; }   /* hidden l'emporte sur display:flex */
+.wind-arrow {
+  color: #e00 !important;   /* rouge (override de la règle globale ph- verte) */
+  font-size: 20px;
+  line-height: 1;
+  display: inline-block;
+  transition: transform .25s ease;
+}
+.wind-text { color: #000; font-weight: 700; font-size: 14px; white-space: nowrap; }
+/* Marqueur avion : image orientée selon le cap (rotation CSS), sans le
+   fond/bordure blancs par défaut des divIcon Leaflet. */
+.leaflet-div-icon.plane-marker { background: none; border: 0; }
+.plane-marker img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  transform-origin: 50% 50%;
+  transition: transform .2s linear;
+}
+/* Pavé d'attribution Leaflet adapté au thème sombre */
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, .9) !important;
+  color: var(--muted) !important;
+}
+.leaflet-control-attribution a { color: var(--accent) !important; }
+
+/* Bouton de suivi de l'avion (haut-gauche, sous le zoom) */
+.map-follow-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 1px 5px rgba(15, 23, 42, .18);
+}
+.map-follow-btn i[class^="ph-"] { font-size: 20px; color: var(--accent); }
+.map-follow-btn:hover { background: var(--bande); }
+.map-follow-btn.active { background: var(--accent); }
+.map-follow-btn.active i[class^="ph-"] { color: #fff; }   /* blanc sur le bleu quand actif */
+
+/* Contrôles déroulants (haut-droite de la carte) : couches + fond, côte à côte */
+.map-controls { display: flex; flex-direction: row; gap: 6px; }
+.map-dropdown { position: relative; }
+.map-dd-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 1px 5px rgba(15, 23, 42, .18);
+}
+.map-dd-btn i[class^="ph-"] { font-size: 20px; color: var(--accent); }
+.map-dd-btn:hover { background: var(--bande); }
+.map-dd-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 170px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .18);
+}
+.map-dd-panel[hidden] { display: none; }   /* hidden l'emporte sur display:flex */
+.map-dd-panel label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: .35rem .5rem;
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.map-dd-panel label:hover { background: var(--panel-2); }
+.map-dd-panel input { accent-color: var(--accent); cursor: pointer; }
+
+/* Infobulles aéroports / navaids (thème sombre) */
+.leaflet-tooltip.airport-tooltip,
+.leaflet-tooltip.navaid-tooltip {
+  background: #ffffff;
+  border: 1px solid var(--accent);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.35;
+  padding: 4px 7px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, .18);
+}
+.leaflet-tooltip.airport-tooltip::before,
+.leaflet-tooltip.navaid-tooltip::before { display: none; }   /* pas de flèche */
+
+/* Labels permanents des points tournants : nom rouge, contour blanc 1 px,
+   posés à côté du point (voir dessinerLabelsPoints, masqués si ça chevauche). */
+.wp-label-wrap { pointer-events: none; display: flex; align-items: center; justify-content: center; }
+.wp-label {
+  font: 700 12px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #ff0000;
+  white-space: nowrap;
+  line-height: 16px;
+  pointer-events: none;
+  /* contour blanc 1 px (halo sur les 4 directions + léger adoucissement) */
+  text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 1px #fff;
+}
+.ap-tt-icao, .nv-tt-ident { color: var(--accent); font-weight: 700; }
+.ap-tt-name { color: var(--title); }
+.ap-tt-rwy, .nv-tt-type, .nv-tt-freq, .nv-tt-range { color: var(--muted); }
+
+/* Popups des lieux de poser (thème sombre) */
+.leaflet-popup-content-wrapper {
+  background: #ffffff;
+  color: var(--ink);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, .18);
+}
+.leaflet-popup-tip { background: #ffffff; border: 1px solid var(--accent); }
+.leaflet-popup-content { margin: 8px 10px; font-size: 12px; line-height: 1.4; }
+.leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+.leaflet-container a.leaflet-popup-close-button:hover { color: var(--accent); }
+/* --- Barre d'état (bas de fenêtre) : indice API --- */
+.statusbar {
+  flex: none;
+  padding: 6px 1.25rem;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+}
+.hint { margin: 0; color: var(--muted); font-size: 12px; }
+.unit { color: var(--muted); font-size: 11px; }
+
+/* --- Modales (overlay + boîte) --- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.overlay[hidden] { display: none; }
+.modal {
+  width: min(520px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, .18);
+}
+.modal h3 { margin: 0 0 14px; font-size: 1.15rem; color: var(--title); }
+.modal-text { color: var(--ink); line-height: 1.55; margin: 0 0 18px; }
+
+.modal-status {
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: .9rem;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+.modal-status.is-ok    { border-color: var(--accent); color: #bdf3b3; }
+.modal-status.is-error { border-color: var(--danger); color: #ffb3b3; }
+.modal-status.is-warn  { border-color: var(--warn); color: #ffd9a0; }
+
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* Message d'erreur de la modale « cercle de portée » (vide = invisible) */
+.modal-error { margin: 0 0 14px; min-height: 1em; color: var(--danger); font-size: .85rem; }
+
+/* --- Modale « À propos » --- */
+/* +50px de hauteur via le padding vertical (20 → 45), largeur inchangée.
+   position:relative pour ancrer le pied en absolu ; padding bas élargi pour
+   réserver la place du pied et éviter tout chevauchement avec le contenu. */
+.about-modal { position: relative; width: min(480px, 92vw); padding-top: 45px; padding-bottom: 64px; }
+/* Pied de modale : version à gauche (blanc), bouton Fermer à droite,
+   ancré à 15px du bas de la fenêtre (les deux sur la même rangée). */
+.about-modal .about-footer {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 15px;
+  margin: 0;
+  justify-content: space-between;
+  align-items: center;
+}
+.about-version { color: var(--muted); font-size: .85rem; letter-spacing: .3px; }
+.about-modal h3 { text-align: center; text-transform: uppercase; letter-spacing: .5px; }
+.about-product { margin: 0 0 12px; text-align: center; font-weight: 700; font-size: 1.05rem; color: var(--accent); }
+.about-modal .about-line { margin: 0 0 10px; color: var(--ink); line-height: 1.55; font-size: .9rem; }
+.about-sep { border: none; border-top: 1px solid var(--line); margin: 14px 0; }
+.about-credit-title { margin: 0 0 8px; font-weight: 700; color: var(--ink); font-size: .9rem; }
+.about-links { margin: 0; padding-left: 18px; color: var(--ink); font-size: .85rem; line-height: 1.6; }
+.about-modal a { color: var(--accent); text-decoration: none; }
+.about-modal a:hover { text-decoration: underline; }
+.about-modal code { font-family: var(--mono); font-size: .85em; }
+
+/* Barre de progression (import aéroports MSFS) */
+.progress-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  margin: 4px 0 10px;
+}
+.progress-bar-fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width .25s ease;
+}
+.progress-count {
+  margin: 0 0 4px;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--accent);
+  text-align: center;
+}
+.progress-stats {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  min-height: 1em;
+}
+
+/* Champs de saisie texte dans les modales (clé API, URL) */
+.field-label {
+  display: block;
+  margin: 0 0 5px;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.field-input {
+  display: block;
+  width: 100%;
+  margin: 0 0 16px;
+  padding: .55rem .7rem;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.field-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.field-input::placeholder { color: #555; }
+
+/* Bouton danger (effacement) */
+.btn-danger { background: var(--rouge); color: #fff; }
+.btn-danger:hover, .btn-danger:focus-visible { background: var(--rouge-h); }
+
+/* Boutons désactivés */
+.btn:disabled,
+.btn:disabled:hover,
+.btn-accent:disabled,
+.btn-accent:disabled:hover,
+.btn-icon:disabled,
+.btn-icon:disabled:hover {
+  background: var(--off-bg);
+  color: var(--off-ink);
+  cursor: not-allowed;
+}
+
+/* --- Bannière de mise à jour (electron-updater) --- */
+.update-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 90vw;
+  padding: 10px 16px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, .18);
+  color: var(--ink);
+  font-size: .9rem;
+}
+.update-banner[hidden] { display: none; }
+.update-banner i[class^="ph-"] { font-size: 20px; color: var(--accent); flex: none; }
+.update-banner-text { white-space: nowrap; }
+.update-banner .btn-accent { flex: none; }
+
+/* ============================================================
+   Espaces aériens — pastilles de famille, panneau de sonde, badges
+   d'obligation. Mêmes idiomes que Tours : entête ardoise, panneau blanc,
+   retours colorés en pastel (vert/rouge/ambre) sur texte foncé.
+   ============================================================ */
+
+/* Pastille de couleur d'une famille (menu déroulant et liste de sonde). */
+.esp-pastille {
+  width: 11px; height: 11px;
+  flex: none;
+  border-radius: 2px;
+  border: 1px solid rgba(31, 41, 51, .35);
+  display: inline-block;
+  margin-right: 6px;
+}
+
+/* Champs du menu déroulant « Espaces aériens ». */
+.map-dd-sep { border: 0; border-top: 1px solid var(--sep); margin: 6px 2px; width: 100%; }
+.map-dd-champ {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.map-dd-champ input {
+  width: 74px;
+  padding: 2px 4px;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: right;
+}
+.map-dd-note {
+  margin: 6px 2px 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+/* Panneau de sonde : l'empilement des espaces au point cliqué. Posé à DROITE de
+   la colonne de contrôles Leaflet (zoom, suivi), qui occupe le coin haut-gauche
+   et passe au-dessus de tout : s'il commençait au bord, les boutons
+   masqueraient les premières lignes. */
+.esp-sonde {
+  position: absolute;
+  left: 56px;
+  top: 10px;
+  width: 310px;
+  max-height: calc(100% - 20px);
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .18);
+  overflow: hidden;
+}
+.esp-sonde[hidden] { display: none; }
+.esp-sonde-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  background: var(--ardoise);
+  color: #fff;
+}
+.esp-sonde-head i[class^="ph-"] { color: #fff; }
+.esp-sonde-titre { font-weight: 600; font-size: 13px; flex: 1; }
+.esp-sonde-head .legs-close { background: transparent; color: #fff; }
+.esp-sonde-head .legs-close:hover { background: var(--ardoise-line); }
+.esp-sonde-sous {
+  margin: 0;
+  padding: 6px 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--bande);
+  border-bottom: 1px solid var(--sep);
+}
+.esp-sonde-corps { overflow-y: auto; padding: 2px 12px 8px; }
+
+/* Une zone de la liste. Estompée si l'altitude courante ne la traverse pas :
+   elle est là, mais pas à ce niveau. */
+.esp-zone {
+  padding: 7px 6px 7px 6px;
+  border-bottom: 1px solid var(--sep);
+  border-left: 3px solid transparent;
+  cursor: pointer;
+}
+.esp-zone:last-child { border-bottom: 0; }
+.esp-zone:hover { background: var(--bande); }
+.esp-zone.esp-hors { opacity: .5; }
+/* Ligne dont le polygone est mis en évidence sur la carte — même ambre que
+   l'étape en cours dans Tours. */
+.esp-zone.est-active {
+  background: #fde68a;
+  border-left-color: var(--bleu);
+  opacity: 1;
+}
+.esp-nom { display: flex; align-items: center; font-weight: 600; font-size: 12.5px; color: var(--title); }
+.esp-meta { margin-left: 17px; font-size: 11.5px; color: var(--muted); font-family: var(--mono); }
+.esp-hor { margin: 3px 0 0 17px; font-size: 11px; color: var(--muted); line-height: 1.35; }
+.esp-badges { margin: 4px 0 0 17px; }
+.esp-vide { margin: 10px 0; color: var(--muted); font-size: 12px; }
+
+/* Badges d'obligation : le rouge pour ce qui interdit ou conditionne le vol,
+   l'ambre pour un régime horaire, l'ardoise pour une information. */
+.esp-badge {
+  display: inline-block;
+  margin: 2px 4px 0 0;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+.esp-dur     { background: #fee2e2; color: #991b1b; }
+.esp-horaire { background: #fef3c7; color: #7c2d12; }
+.esp-info    { background: var(--bande); color: #334155; }
+
+/* Modale d'import : état courant du cycle et du dépôt. */
+.esp-etat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 10px 0;
+  padding: 10px 12px;
+  background: var(--bande);
+  border: 1px solid var(--sep);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #334155;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.esp-actions-sec { justify-content: flex-start; gap: 8px; }

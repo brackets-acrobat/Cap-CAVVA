@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Espaces aériens — France métropolitaine (openAIP, vectoriel)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root {
+    --bg: #12151a; --panel: #1b2027; --panel2: #232a33; --txt: #e6e9ee;
+    --txt2: #98a2b3; --line: #2f3742; --acc: #4da3ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font: 13px/1.45 system-ui, "Segoe UI", sans-serif;
+               background: var(--bg); color: var(--txt); }
+  #app { display: flex; height: 100%; }
+  #map { flex: 1; background: #0d1014; }
+  #side { width: 340px; background: var(--panel); border-left: 1px solid var(--line);
+          overflow-y: auto; padding: 14px; }
+  #left { width: 340px; background: var(--panel); border-right: 1px solid var(--line);
+          overflow-y: auto; padding: 14px; }
+  .zrow { padding: 8px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .zrow:hover { background: var(--panel2); }
+  .zrow.hors { opacity: .42; }
+  .znom { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+  .znom .sw { flex: none; }
+  .zlim { color: var(--txt2); font-size: 11.5px; margin-left: 19px; }
+  .zobl { margin: 3px 0 0 19px; }
+  .badge { display: inline-block; border-radius: 3px; padding: 0 5px; font-size: 10.5px;
+           margin: 2px 3px 0 0; background: #3d2a2a; color: #ff9d9d; }
+  .badge.info { background: #2a3340; color: #9cc7ff; }
+  .badge.act { background: #33302a; color: #e6c78b; }
+  .zalt { font-size: 10.5px; color: var(--txt2); margin-left: 19px; }
+  .zin { color: #7fd48b; }
+  h1 { font-size: 14px; margin: 0 0 4px; letter-spacing: .2px; }
+  .sub { color: var(--txt2); font-size: 11.5px; margin-bottom: 14px; }
+  fieldset { border: 1px solid var(--line); border-radius: 6px; margin: 0 0 12px; padding: 10px; }
+  legend { color: var(--txt2); font-size: 11px; text-transform: uppercase; letter-spacing: .6px; padding: 0 5px; }
+  input, select, button { font: inherit; background: var(--panel2); color: var(--txt);
+                          border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; }
+  input[type=text], input[type=password], input[type=number], select { width: 100%; }
+  button { cursor: pointer; }
+  button.primary { background: var(--acc); color: #06131f; border-color: var(--acc); font-weight: 600; width: 100%; }
+  button.primary:disabled { opacity: .5; cursor: default; }
+  label.row { display: flex; align-items: center; gap: 7px; padding: 2px 0; cursor: pointer; }
+  label.row input { width: auto; }
+  .sw { width: 13px; height: 13px; border-radius: 3px; flex: none; border: 1px solid rgba(255,255,255,.35); }
+  .n { margin-left: auto; color: var(--txt2); font-variant-numeric: tabular-nums; font-size: 11.5px; }
+  .hint { color: var(--txt2); font-size: 11px; margin-top: 6px; }
+  #log { white-space: pre-wrap; font-family: ui-monospace, Consolas, monospace; font-size: 11px;
+         color: var(--txt2); max-height: 150px; overflow-y: auto; }
+  table.stats { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  table.stats td { padding: 2px 0; border-bottom: 1px solid var(--line); }
+  table.stats td:last-child { text-align: right; color: var(--txt2); font-variant-numeric: tabular-nums; }
+  .leaflet-popup-content { font: 12px/1.45 system-ui, sans-serif; min-width: 230px; }
+  .leaflet-popup-content h3 { margin: 0 0 6px; font-size: 13px; }
+  .leaflet-popup-content dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; }
+  .leaflet-popup-content dt { color: #667; }
+  .leaflet-popup-content dd { margin: 0; }
+  .tag { display: inline-block; background: #ffe6e6; color: #a00; border-radius: 3px;
+         padding: 0 5px; font-size: 11px; margin-right: 4px; }
+  #probe { border: 1px dashed var(--acc); }
+  #probeOut { margin-top: 8px; font-size: 11.5px; }
+  #probeOut div { padding: 3px 0; border-bottom: 1px solid var(--line); }
+
+  /* Bandeau de vol : les trois références d'altitude côte à côte, parce que
+     c'est exactement ce que la donnée demande pour être lue sans conversion. */
+  .trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0 6px; }
+  .trio div { background: var(--panel2); border: 1px solid var(--line); border-radius: 5px;
+              padding: 6px 7px; }
+  .trio b { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .trio span { display: block; color: var(--txt2); font-size: 10px; text-transform: uppercase;
+               letter-spacing: .4px; margin-top: 1px; }
+  #vAvenir { margin-top: 10px; }
+  #vAvenir .titre { color: #e6c78b; font-size: 11px; text-transform: uppercase;
+                    letter-spacing: .6px; margin-bottom: 4px; }
+  #vAvenir .zrow { border-bottom: 1px solid var(--line); }
+  .lien { display: inline-flex; align-items: center; gap: 5px; font-size: 11px;
+          color: var(--txt2); margin-bottom: 2px; }
+  .pastille { width: 8px; height: 8px; border-radius: 50%; background: #6b7b8c; flex: none; }
+  .pastille.vive { background: #7fd48b; box-shadow: 0 0 0 3px rgba(127,212,139,.16); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="left">
+    <h1 id="pTitre">Au point cliqué</h1>
+    <div class="sub" id="pPos">Clique n'importe où sur la carte : toutes les zones
+      superposées à cet endroit sont listées ici, de la plus basse à la plus haute.</div>
+
+    <div id="vol" hidden>
+      <div class="trio">
+        <div><b id="vAmsl">—</b><span>altitude vraie</span></div>
+        <div><b id="vAgl">—</b><span>hauteur-sol</span></div>
+        <div><b id="vStd">—</b><span>alt. pression</span></div>
+      </div>
+      <div class="hint" id="vCalage"></div>
+      <div id="vAvenir"></div>
+    </div>
+
+    <div id="manuel">
+      <label style="color:var(--txt2);font-size:11.5px">Altitude de test (ft)</label>
+      <input type="number" id="pAlt" value="2000" step="500">
+      <div class="hint">Les zones que cette altitude traverse sont en clair ; les autres,
+        estompées. Sans le simulateur, les trois références (sol, mer, pression) sont
+        confondues en une seule : c'est l'approximation que le vol réel lève.</div>
+    </div>
+
+    <div id="probeOut" style="margin-top:10px"></div>
+  </div>
+  <div id="map"></div>
+  <div id="side">
+    <h1>Espaces aériens — France métropolitaine</h1>
+    <div class="sub">Données openAIP, tracé vectoriel interrogeable.<br>
+      Page d'évaluation : sert à juger la qualité réelle de la donnée française.</div>
+
+    <fieldset>
+      <legend>Clé openAIP</legend>
+      <input type="password" id="key" placeholder="x-openaip-api-key" autocomplete="off">
+      <div class="hint">Stockée uniquement dans le <code>localStorage</code> de ce navigateur.
+        Elle n'est envoyée qu'à <code>api.core.openaip.net</code>.</div>
+      <div style="height:8px"></div>
+      <button class="primary" id="load">Charger la France</button>
+      <div id="log" style="margin-top:8px"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Familles de zones</legend>
+      <div id="families"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Filtres</legend>
+      <label class="row"><input type="checkbox" id="fNotam"> Activation variable seulement
+        <span class="hint" style="margin:0">(byNotam / onRequest)</span></label>
+      <div style="height:8px"></div>
+      <label style="color:var(--txt2);font-size:11.5px">Plancher au-dessous de (ft)</label>
+      <input type="number" id="fFloor" value="5000" step="500" min="0">
+      <div class="hint">Masque les zones dont le plancher est trop haut pour te concerner.
+        FL converti en pieds standard, GND traité comme 0.</div>
+      <div style="height:8px"></div>
+      <label style="color:var(--txt2);font-size:11.5px">Activité</label>
+      <select id="fAct">
+        <option value="">toutes</option>
+        <option value="1">parachutage</option>
+        <option value="2">voltige</option>
+        <option value="3">aéroclub / travail aérien</option>
+        <option value="4">ULM</option>
+        <option value="5">vol libre</option>
+      </select>
+    </fieldset>
+
+    <fieldset>
+      <legend>Ce que contient la donnée</legend>
+      <table class="stats"><tbody id="stats">
+        <tr><td colspan="2" style="color:var(--txt2);border:0">— rien de chargé —</td></tr>
+      </tbody></table>
+    </fieldset>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ============================================================
+// Espaces aériens français en vectoriel — page d'évaluation.
+//
+// But : juger si la donnée openAIP française est assez complète et assez
+// propre pour porter l'application du mercredi soir. Trois questions :
+//   1. Les zones R, P, D sont-elles toutes là, avec leurs limites verticales ?
+//   2. Les parcs et réserves apparaissent-ils (types 19 et 29) ?
+//   3. Les fréquences de contact sont-elles renseignées ?
+//
+// La sonde de position en bas du panneau préfigure le moteur de l'appli :
+// point dans le volume, puis traduction en obligation.
+// ============================================================
+
+// ------------------------------------------------------------
+// Nomenclature openAIP
+// ------------------------------------------------------------
+
+const TYPES = {
+  0:'Autre', 1:'Restricted (R)', 2:'Danger (D)', 3:'Prohibited (P)', 4:'CTR', 5:'TMZ', 6:'RMZ',
+  7:'TMA', 8:'TRA', 9:'TSA', 10:'FIR', 11:'UIR', 12:'ADIZ', 13:'ATZ', 14:'MATZ', 15:'Airway',
+  16:'MTR', 17:'Alert Area', 18:'Warning Area', 19:'Zone protégée', 20:'HTZ', 21:'Secteur planeur',
+  22:'TRP', 23:'TIZ', 24:'TIA', 25:'MTA', 26:'CTA', 27:'Secteur ACC', 28:'Activité sportive',
+  29:'Survol basse altitude réglementé', 30:'Route militaire', 31:'TFR', 32:'Secteur VFR',
+  33:'Secteur FIS', 34:'LTA', 35:'UTA', 36:'MCTR'
+};
+
+const CLASSES = { 0:'A', 1:'B', 2:'C', 3:'D', 4:'E', 5:'F', 6:'G', 8:'non classé (SUA)' };
+const ACTIVITIES = { 0:'', 1:'parachutage', 2:'voltige', 3:'aéroclub / travail aérien',
+                     4:'ULM', 5:'vol libre' };
+const UNITS = { 0:'m', 1:'ft', 6:'FL' };
+const DATUMS = { 0:'GND', 1:'MSL', 2:'STD' };
+
+// Familles d'affichage. Les couleurs approchent la convention OACI française —
+// à reprendre sur la légende officielle du SIA avant d'en faire un produit.
+const FAMILIES = [
+  { id:'RPD',   nom:'R / P / D',                types:[1,2,3],        couleur:'#e02b2b', on:true },
+  { id:'CTR',   nom:'CTR / MCTR / ATZ',         types:[4,36,13],      couleur:'#1f6feb', on:true },
+  { id:'TMA',   nom:'TMA / CTA / LTA / UTA',    types:[7,26,34,35],   couleur:'#5a8fd6', on:true },
+  { id:'PARC',  nom:'Parcs et survol réglementé',types:[19,29],       couleur:'#2f9e5a', on:true },
+  { id:'MIL',   nom:'Militaire (MATZ, MTR, MTA, TSA, TRA)', types:[14,16,25,30,8,9], couleur:'#8a6d3b', on:true },
+  { id:'SPORT', nom:'Planeur / voltige / sportif', types:[21,28,20],  couleur:'#8e44ad', on:true },
+  { id:'RADIO', nom:'TMZ / RMZ',                types:[5,6],          couleur:'#6b7b8c', on:true },
+  { id:'INFO',  nom:'TIZ / TIA / secteurs FIS/VFR', types:[23,24,32,33], couleur:'#3aa6a6', on:false },
+  { id:'HAUT',  nom:'FIR / UIR / ACC / Airways', types:[10,11,27,15], couleur:'#444c56', on:false },
+  { id:'AUTRE', nom:'Autres',                   types:[0,12,17,18,22,31], couleur:'#7a7a7a', on:false }
+];
+
+const familleDe = {};
+FAMILIES.forEach(f => f.types.forEach(t => familleDe[t] = f));
+
+// ------------------------------------------------------------
+// Carte
+// ------------------------------------------------------------
+
+const carte = L.map('map', { preferCanvas: true }).setView([46.6, 2.5], 6);
+
+const fonds = {
+  'OpenStreetMap': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18, attribution: '© OpenStreetMap' }),
+  'OpenTopoMap': L.tileLayer('https://tile.opentopomap.org/{z}/{x}/{y}.png', {
+    maxZoom: 17, attribution: '© OpenTopoMap, © OpenStreetMap' })
+};
+fonds['OpenStreetMap'].addTo(carte);
+L.control.layers(fonds, null, { position: 'topleft' }).addTo(carte);
+
+const couche = L.layerGroup().addTo(carte);
+let zones = [];       // objets bruts de l'API
+let marqueurSonde = null;
+
+// ------------------------------------------------------------
+// Limites verticales
+// ------------------------------------------------------------
+
+// Convertit une limite en pieds au-dessus du niveau de la mer, approximativement.
+// GND est traité comme 0 : sans le relief on ne peut pas faire mieux, et c'est
+// justement ce que l'application corrigera avec PLANE ALT ABOVE GROUND.
+function enPieds(lim) {
+  if (!lim || typeof lim.value !== 'number') return null;
+  if (lim.unit === 6) return lim.value * 100;   // niveau de vol
+  if (lim.unit === 0) return lim.value * 3.28084;
+  return lim.value;
+}
+
+function limiteTexte(lim) {
+  if (!lim || typeof lim.value !== 'number') return '?';
+  if (lim.unit === 6) return 'FL ' + lim.value;
+  if (lim.referenceDatum === 0 && lim.value === 0) return 'SFC';
+  return lim.value + ' ' + (UNITS[lim.unit] || '') + ' ' + (DATUMS[lim.referenceDatum] || '');
+}
+
+// ------------------------------------------------------------
+// Obligations — la traduction qui fait l'intérêt de l'outil
+// ------------------------------------------------------------
+
+function obligations(z) {
+  const out = [];
+  if (z.type === 3) out.push({ t: 'INTERDIT', d: 'pénétration interdite' });
+  if (z.type === 1) out.push({ t: 'AUTORISATION', d: 'zone réglementée : pénétration soumise à autorisation' });
+  if (z.type === 2) out.push({ t: 'DANGER', d: 'zone dangereuse : traversée déconseillée' });
+  if ([0,1,2,3].includes(z.icaoClass)) out.push({ t: 'CLAIRANCE', d: 'classe ' + CLASSES[z.icaoClass] + ' : clairance obligatoire' });
+  if (z.icaoClass === 4) out.push({ t: 'RADIO', d: 'classe E : contact recommandé' });
+  if (z.type === 6) out.push({ t: 'RADIO', d: 'RMZ : radio obligatoire' });
+  if (z.type === 5) out.push({ t: 'XPDR', d: 'TMZ : transpondeur obligatoire' });
+  if ([4,36].includes(z.type)) out.push({ t: 'RADIO', d: 'CTR : contact obligatoire avant pénétration' });
+  if ([19,29].includes(z.type)) out.push({ t: 'SURVOL', d: 'hauteur minimale de survol imposée' });
+  if (z.activity) out.push({ t: 'ACTIVITÉ', d: ACTIVITIES[z.activity] });
+  if (z.byNotam) out.push({ t: 'NOTAM', d: 'activation par NOTAM — variable' });
+  if (z.onRequest) out.push({ t: 'À LA DEMANDE', d: 'activable à la demande' });
+  return out;
+}
+
+// ------------------------------------------------------------
+// Filtrage et tracé
+// ------------------------------------------------------------
+
+function familleActive(id) {
+  const el = document.getElementById('fam_' + id);
+  return el ? el.checked : false;
+}
+
+function passeFiltres(z) {
+  const f = familleDe[z.type];
+  if (!f || !familleActive(f.id)) return false;
+
+  if (document.getElementById('fNotam').checked && !(z.byNotam || z.onRequest)) return false;
+
+  const act = document.getElementById('fAct').value;
+  if (act && String(z.activity) !== act) return false;
+
+  const plafondFiltre = parseFloat(document.getElementById('fFloor').value);
+  if (!isNaN(plafondFiltre)) {
+    const plancher = enPieds(z.lowerLimit);
+    if (plancher !== null && plancher > plafondFiltre) return false;
+  }
+  return true;
+}
+
+function tracer() {
+  couche.clearLayers();
+  zones.forEach(z => { z.__couche = null; });
+  let n = 0;
+  for (const z of zones) {
+    if (!passeFiltres(z)) continue;
+    if (!z.geometry) continue;
+    const f = familleDe[z.type];
+    const forte = [1, 3].includes(z.type);
+    // interactive:false — sans ça, le premier polygone touché avale le clic et
+    // masque toutes les zones situées dessous. Le clic doit atteindre la carte.
+    const l = L.geoJSON(z.geometry, {
+      interactive: false,
+      style: {
+        color: f.couleur,
+        weight: forte ? 2 : 1.2,
+        opacity: .9,
+        fillColor: f.couleur,
+        fillOpacity: forte ? .16 : .07,
+        dashArray: (z.byNotam || z.onRequest) ? '6 4' : null
+      }
+    });
+    z.__couche = l;
+    l.addTo(couche);
+    n++;
+  }
+  majTitre(n);
+  // Un changement de filtre doit aussi rafraîchir la liste du point cliqué.
+  if (marqueurSonde) sonder(marqueurSonde.getLatLng());
+}
+
+function majTitre(n) {
+  document.title = `Espaces aériens France — ${n} zones affichées`;
+}
+
+// ------------------------------------------------------------
+// Sonde de position — point dans le volume
+// ------------------------------------------------------------
+
+function dansAnneau(pt, anneau) {
+  let dedans = false;
+  for (let i = 0, j = anneau.length - 1; i < anneau.length; j = i++) {
+    const xi = anneau[i][0], yi = anneau[i][1];
+    const xj = anneau[j][0], yj = anneau[j][1];
+    const coupe = ((yi > pt[1]) !== (yj > pt[1])) &&
+                  (pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi);
+    if (coupe) dedans = !dedans;
+  }
+  return dedans;
+}
+
+function dansPolygone(pt, poly) {
+  if (!dansAnneau(pt, poly[0])) return false;
+  for (let t = 1; t < poly.length; t++) if (dansAnneau(pt, poly[t])) return false; // trou
+  return true;
+}
+
+function dansGeometrie(pt, geom) {
+  if (!geom) return false;
+  if (geom.type === 'Polygon') return dansPolygone(pt, geom.coordinates);
+  if (geom.type === 'MultiPolygon') return geom.coordinates.some(p => dansPolygone(pt, p));
+  return false;
+}
+
+// Les filtres de famille, d'activation et d'activité s'appliquent à la liste —
+// c'est ainsi qu'on règle le bruit. Le filtre d'altitude, non : c'est justement
+// la superposition verticale qu'on veut voir ici.
+function passeFamille(z) {
+  const f = familleDe[z.type];
+  if (!f || !familleActive(f.id)) return false;
+  if (document.getElementById('fNotam').checked && !(z.byNotam || z.onRequest)) return false;
+  const act = document.getElementById('fAct').value;
+  if (act && String(z.activity) !== act) return false;
+  return true;
+}
+
+let derniereListe = [];
+
+function sonder(latlng) {
+  const alt = parseFloat(document.getElementById('pAlt').value);
+  const pt = [latlng.lng, latlng.lat];
+
+  const dedans = zones.filter(z => passeFamille(z) && dansGeometrie(pt, z.geometry));
+  dedans.sort((a, b) => (enPieds(a.lowerLimit) ?? 0) - (enPieds(b.lowerLimit) ?? 0));
+  derniereListe = dedans;
+
+  const traversees = dedans.filter(z => traverse(z, alt)).length;
+  document.getElementById('pPos').innerHTML =
+    `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)} — <b>${dedans.length}</b> zone(s) superposée(s), ` +
+    `dont <span class="zin">${traversees} à ${isNaN(alt) ? '?' : alt} ft</span>.`;
+
+  const out = document.getElementById('probeOut');
+  if (!dedans.length) {
+    out.innerHTML = '<div style="color:var(--txt2)">Aucune zone à cet endroit.</div>';
+    return;
+  }
+
+  out.innerHTML = dedans.map((z, i) => {
+    const f = familleDe[z.type];
+    const dans = traverse(z, alt);
+    const bas = enPieds(z.lowerLimit);
+    let situation = '';
+    if (!dans && bas !== null && !isNaN(alt) && alt < bas)
+      situation = `au-dessus de toi (${Math.round(bas - alt)} ft plus haut)`;
+    else if (!dans) situation = 'au-dessous de toi';
+    else situation = 'tu es dedans';
+
+    return `<div class="zrow ${dans ? '' : 'hors'}" data-i="${i}">
+      <div class="znom"><span class="sw" style="background:${f ? f.couleur : '#888'}"></span>
+        ${z.name || '(sans nom)'}</div>
+      <div class="zlim">${TYPES[z.type] || z.type}${z.icaoClass !== undefined && CLASSES[z.icaoClass] ? ' · classe ' + CLASSES[z.icaoClass] : ''}</div>
+      <div class="zlim">${limiteTexte(z.lowerLimit)} → ${limiteTexte(z.upperLimit)}</div>
+      <div class="zalt ${dans ? 'zin' : ''}">${situation}</div>
+      <div class="zobl">${badges(z)}</div>
+    </div>`;
+  }).join('');
+
+  out.querySelectorAll('.zrow').forEach(el =>
+    el.addEventListener('click', () => souligner(derniereListe[+el.dataset.i])));
+}
+
+function traverse(z, alt) {
+  if (isNaN(alt)) return true;
+  const bas = enPieds(z.lowerLimit), haut = enPieds(z.upperLimit);
+  if (bas !== null && alt < bas) return false;
+  if (haut !== null && alt > haut) return false;
+  return true;
+}
+
+function badges(z) {
+  return obligations(z).map(o => {
+    const cl = o.t === 'ACTIVITÉ' ? 'act'
+             : ['RADIO', 'XPDR', 'NOTAM', 'À LA DEMANDE', 'SURVOL'].includes(o.t) ? 'info' : '';
+    return `<span class="badge ${cl}" title="${o.d}">${o.t}</span>`;
+  }).join('') + frequencesTexte(z);
+}
+
+function frequencesTexte(z) {
+  const fs = (z.frequencies || []).map(f => f.value || f.frequency).filter(Boolean);
+  return fs.length ? `<span class="badge info">${fs.join(' / ')}</span>` : '';
+}
+
+// Fait clignoter la zone sur la carte, pour relier la ligne de la liste au tracé.
+function souligner(z) {
+  if (!z || !z.__couche) return;
+  const f = familleDe[z.type];
+  const forte = [1, 3].includes(z.type);
+  z.__couche.setStyle({ weight: 4, opacity: 1, fillOpacity: .38, color: '#ffffff' });
+  setTimeout(() => {
+    if (!z.__couche) return;
+    z.__couche.setStyle({
+      color: f.couleur, weight: forte ? 2 : 1.2, opacity: .9,
+      fillColor: f.couleur, fillOpacity: forte ? .16 : .07
+    });
+  }, 1400);
+}
+
+carte.on('click', e => {
+  if (marqueurSonde) carte.removeLayer(marqueurSonde);
+  marqueurSonde = L.circleMarker(e.latlng, { radius: 6, color: '#fff', weight: 2,
+                                             fillColor: '#4da3ff', fillOpacity: 1 }).addTo(carte);
+  sonder(e.latlng);
+});
+
+// ------------------------------------------------------------
+// Chargement depuis openAIP
+// ------------------------------------------------------------
+
+// L'API plafonne bbox à 5° de large. La France en fait 15 : on interroge donc par
+// pays, en une seule requête paginée, et on écarte l'outre-mer ici.
+// Boîte de la France métropolitaine, Corse comprise.
+const METROPOLE = { ouest: -5.3, sud: 41.2, est: 9.8, nord: 51.3 };
+
+function dansMetropole(geom) {
+  if (!geom || !geom.coordinates) return false;
+  let trouve = false;
+  const visiter = c => {
+    if (trouve) return;
+    if (typeof c[0] === 'number') {
+      if (c[0] >= METROPOLE.ouest && c[0] <= METROPOLE.est &&
+          c[1] >= METROPOLE.sud && c[1] <= METROPOLE.nord) trouve = true;
+      return;
+    }
+    for (const s of c) visiter(s);
+  };
+  visiter(geom.coordinates);
+  return trouve;
+}
+
+function journal(m) {
+  const l = document.getElementById('log');
+  l.textContent += m + '\n';
+  l.scrollTop = l.scrollHeight;
+}
+
+async function charger() {
+  const cle = document.getElementById('key').value.trim();
+  if (!cle) { journal('Clé manquante.'); return; }
+  localStorage.setItem('openaip_key', cle);
+
+  const bouton = document.getElementById('load');
+  bouton.disabled = true;
+  document.getElementById('log').textContent = '';
+  zones = [];
+
+  try {
+    // Déduplication sur _id : sans tri explicite, rien ne garantit que l'ordre
+    // reste le même entre deux requêtes de pagination. Un élément peut alors
+    // revenir sur deux pages pendant qu'un autre passe à la trappe. On compare
+    // ensuite le nombre reçu au totalCount annoncé : l'écart, s'il existe, est
+    // exactement le nombre de zones perdues.
+    const brutes = [];
+    const vus = new Set();
+    let page = 1, annonce = null, doublons = 0;
+
+    while (true) {
+      const url = `https://api.core.openaip.net/api/airspaces?page=${page}&limit=1000&country=FR`;
+      const r = await fetch(url, { headers: { 'x-openaip-api-key': cle } });
+      if (!r.ok) {
+        journal(`HTTP ${r.status} — ${await r.text()}`);
+        break;
+      }
+      const j = await r.json();
+      annonce = j.totalCount;
+      for (const it of (j.items || [])) {
+        const id = it._id || JSON.stringify(it.geometry);
+        if (vus.has(id)) { doublons++; continue; }
+        vus.add(id);
+        brutes.push(it);
+      }
+      journal(`page ${page}/${j.totalPages} — ${brutes.length}/${j.totalCount}`);
+      if (!j.nextPage || page >= j.totalPages) break;
+      page = j.nextPage;
+    }
+
+    if (doublons) journal(`⚠ ${doublons} doublon(s) entre pages.`);
+    if (annonce !== null && brutes.length !== annonce)
+      journal(`⚠ ${annonce} zones annoncées, ${brutes.length} distinctes reçues : ` +
+              `${annonce - brutes.length} perdue(s) par la pagination.`);
+
+    zones = brutes.filter(z => dansMetropole(z.geometry));
+    const ecartees = brutes.length - zones.length;
+    journal(`Terminé : ${zones.length} zones en métropole` +
+            (ecartees ? ` (${ecartees} écartées : outre-mer).` : '.'));
+    statistiques();
+    tracer();
+  } catch (e) {
+    journal('Échec : ' + e.message);
+  } finally {
+    bouton.disabled = false;
+  }
+}
+
+// ------------------------------------------------------------
+// Statistiques — le vrai but de cette page
+// ------------------------------------------------------------
+
+function statistiques() {
+  const parType = {};
+  let avecFreq = 0, avecLimites = 0, variables = 0, parcs = 0;
+
+  for (const z of zones) {
+    parType[z.type] = (parType[z.type] || 0) + 1;
+    if ((z.frequencies || []).length) avecFreq++;
+    if (z.lowerLimit && z.upperLimit) avecLimites++;
+    if (z.byNotam || z.onRequest) variables++;
+    if ([19, 29].includes(z.type)) parcs++;
+  }
+
+  const lignes = [];
+  const pct = n => zones.length ? Math.round(100 * n / zones.length) + ' %' : '—';
+  lignes.push(['<b>Total</b>', '<b>' + zones.length + '</b>']);
+  lignes.push(['Limites verticales complètes', avecLimites + ' (' + pct(avecLimites) + ')']);
+  lignes.push(['Avec fréquence', avecFreq + ' (' + pct(avecFreq) + ')']);
+  lignes.push(['Activation variable', variables + ' (' + pct(variables) + ')']);
+  lignes.push(['<b>Parcs / survol réglementé</b>', '<b>' + parcs + '</b>']);
+  lignes.push(['&nbsp;', '']);
+
+  Object.keys(parType).map(Number).sort((a, b) => parType[b] - parType[a])
+    .forEach(t => lignes.push([TYPES[t] || ('type ' + t), parType[t]]));
+
+  document.getElementById('stats').innerHTML =
+    lignes.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('');
+}
+
+// ------------------------------------------------------------
+// Interface
+// ------------------------------------------------------------
+
+document.getElementById('families').innerHTML = FAMILIES.map(f => `
+  <label class="row">
+    <input type="checkbox" id="fam_${f.id}" ${f.on ? 'checked' : ''}>
+    <span class="sw" style="background:${f.couleur}"></span>${f.nom}
+  </label>`).join('');
+
+FAMILIES.forEach(f => document.getElementById('fam_' + f.id).addEventListener('change', tracer));
+['fNotam', 'fFloor', 'fAct'].forEach(id =>
+  document.getElementById(id).addEventListener('change', tracer));
+document.getElementById('load').addEventListener('click', charger);
+document.getElementById('pAlt').addEventListener('change', () => {
+  if (marqueurSonde) sonder(marqueurSonde.getLatLng());
+});
+
+const cleSauvee = localStorage.getItem('openaip_key');
+if (cleSauvee) document.getElementById('key').value = cleSauvee;
+</script>
+</body>
+</html>

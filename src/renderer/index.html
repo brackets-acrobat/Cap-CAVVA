@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'; img-src 'self' data: https://*.tile.opentopomap.org https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com;">
+  <title>Cap CAVVA</title>
+  <!-- Icônes Phosphor Light + Leaflet vendorés en local (CSP stricte, app hors-ligne) -->
+  <link rel="stylesheet" href="vendor/phosphor/style.css">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+  <script src="vendor/leaflet/leaflet.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-logo" src="../img/dr400_banniere.png" alt="Cap CAVVA">
+      <!-- Import MSFS 2024 : bouton-icône + menu déroulant (aéroports / navaids) -->
+      <div class="import-menu">
+        <button id="btn-import" class="btn btn-icon" data-i18n-title="btnImport" title="Importer" aria-haspopup="true" aria-expanded="false">
+          <i class="ph-light ph-download-simple"></i>
+        </button>
+        <div id="import-dropdown" class="dropdown" hidden>
+          <button id="menu-import-airports" class="dropdown-item"><span data-i18n="menuImportAirports">Aéroports MSFS2024</span></button>
+          <button id="menu-import-navaids" class="dropdown-item"><span data-i18n="menuImportNavaids">Navaids MSFS2024</span></button>
+          <button id="menu-import-elevation" class="dropdown-item"><span data-i18n="menuImportElevation">Données d'élévation</span></button>
+          <button id="menu-import-espaces" class="dropdown-item"><span data-i18n="menuImportEspaces">Espaces aériens (SIA)</span></button>
+        </div>
+      </div>
+      <!-- Afficher / masquer le tableau des legs (panneau « Plan de vol ») -->
+      <button id="btn-legs" class="btn btn-icon" data-i18n-title="legsToggle" title="Afficher plan de vol" aria-pressed="false">
+        <i class="ph-light ph-table"></i>
+      </button>
+      <!-- Afficher / masquer le profil vertical (relief le long du plan) -->
+      <button id="btn-profil" class="btn btn-icon" data-i18n-title="vertProfileToggle" title="Afficher le profil vertical" aria-pressed="false">
+        <i class="ph-light ph-chart-line"></i>
+      </button>
+    </div>
+    <div class="conn">
+      <!-- Bouton « ? » : ouvre la modale « À propos » (comme NavXpressVFR) -->
+      <button id="btn-about" class="btn btn-icon" data-i18n-title="btnAboutTooltip" title="À propos" aria-label="À propos">
+        <i class="ph-light ph-question-mark"></i>
+      </button>
+      <button id="btn-connect" class="btn btn-state-off"><i class="ph-light ph-plugs"></i> Connecter MSFS2024</button>
+      <button id="btn-api-key" class="btn" data-i18n-title="apiKeyTitle" title="Clé CAVVA"><i class="ph-light ph-key"></i> <span data-i18n="btnApiKey">Clé CAVVA</span></button>
+      <!-- Bouton toggle bilingue FR / EN (en haut à droite, comme NavXpressVFR) -->
+      <button id="btn-lang-toggle" class="btn-lang" data-i18n-title="toggleTitle" title="Changer de langue / Switch language">
+        <span class="lang-fr lang-active">FR</span>
+        <span class="lang-separator">|</span>
+        <span class="lang-en">EN</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Second bandeau : ICAO départ/arrivée (plan) + données live essentielles -->
+  <div class="subbar">
+    <div class="subbar-field">
+      <label class="subbar-flabel" for="icao-dep" data-i18n="lblIcaoDep">ICAO départ</label>
+      <input id="icao-dep" class="icao-input" type="text" maxlength="6" autocomplete="off" spellcheck="false" placeholder="----">
+    </div>
+    <div class="subbar-field">
+      <label class="subbar-flabel" for="icao-arr" data-i18n="lblIcaoArr">ICAO arrivée</label>
+      <input id="icao-arr" class="icao-input" type="text" maxlength="6" autocomplete="off" spellcheck="false" placeholder="----">
+    </div>
+    <div class="subbar-item"><i class="ph-light ph-map-pin"></i> <span data-i18n="lblLat">Latitude</span> <span id="b-lat" class="subval">—</span></div>
+    <div class="subbar-item"><i class="ph-light ph-map-pin"></i> <span data-i18n="lblLon">Longitude</span> <span id="b-lon" class="subval">—</span></div>
+    <div class="subbar-item"><i class="ph-light ph-arrow-line-up"></i> <span data-i18n="lblAmsl">Altitude MSL</span> <span id="b-amsl" class="subval">—</span><span class="unit">ft</span></div>
+    <div class="subbar-actions">
+      <button id="btn-new-plan" class="subbar-btn" data-i18n-title="newPlanTooltip" title="Nouveau plan de vol">
+        <i class="ph-light ph-file-plus"></i>
+      </button>
+      <button id="btn-open-plan" class="subbar-btn" data-i18n-title="openPlanTooltip" title="Ouvrir un plan de vol">
+        <i class="ph-light ph-folder-open"></i>
+      </button>
+      <button id="btn-save-plan" class="subbar-btn" data-i18n-title="savePlanTooltip" title="Sauvegarder le plan de vol">
+        <i class="ph-light ph-floppy-disk"></i>
+      </button>
+    </div>
+  </div>
+
+  <main>
+    <!-- Carte (fond OpenTopoMap), suit l'avion quand SimConnect est connecté -->
+    <div id="map"></div>
+    <!-- Indicateur de vent (centré, même ligne que les menus déroulants de la carte) -->
+    <div id="wind-indicator" class="wind-indicator" hidden>
+      <i class="ph-light ph-arrow-fat-up wind-arrow" id="wind-arrow"></i>
+      <span class="wind-text" id="wind-text">—</span>
+    </div>
+    <!-- Sonde des espaces : ce qui se superpose au point cliqué sur la carte -->
+    <aside id="esp-sonde" class="esp-sonde" hidden>
+      <div class="esp-sonde-head">
+        <span class="esp-sonde-titre"><i class="ph-light ph-polygon"></i> <span data-i18n="espProbeTitle">Espaces à cet endroit</span></span>
+        <button id="esp-sonde-close" class="legs-close" type="button" data-i18n-title="espProbeClose" title="Fermer"><i class="ph-light ph-x"></i></button>
+      </div>
+      <p class="esp-sonde-sous"><span id="esp-sonde-pos">—</span> · <span id="esp-sonde-compte">—</span></p>
+      <div id="esp-sonde-corps" class="esp-sonde-corps"></div>
+    </aside>
+    <!-- Panneau « Plan de vol » : tableau des legs, sur le tiers droit de la carte -->
+    <aside id="legs-panel" class="legs-panel" hidden>
+      <div class="legs-head">
+        <span class="legs-title"><i class="ph-light ph-path"></i> <span data-i18n="legsTitle">Plan de vol</span></span>
+        <span class="legs-total"><span data-i18n="legsTotal">Distance totale</span> : <span id="legs-total-val" class="legs-total-num">—</span></span>
+        <button id="btn-copy-waypoints" class="legs-close" type="button" data-i18n-title="copyWpTitle" title="Copier les points tournants"><i class="ph-light ph-clipboard"></i></button>
+        <button id="legs-close" class="legs-close" type="button" data-i18n-title="legsClose" title="Masquer"><i class="ph-light ph-x"></i></button>
+      </div>
+      <div class="legs-scroll">
+        <table class="legs-table">
+          <thead>
+            <tr>
+              <th data-i18n="legsColFrom">Départ</th>
+              <th data-i18n="legsColTo">Arrivée</th>
+              <th class="legs-num" data-i18n="legsColHdg">Cap</th>
+              <th class="legs-num" data-i18n="legsColAlt">Altitude</th>
+              <th class="legs-num" data-i18n="legsColDist">Dist.</th>
+            </tr>
+          </thead>
+          <tbody id="legs-tbody"></tbody>
+        </table>
+        <p id="legs-empty" class="legs-empty" data-i18n="legsEmpty" hidden>Aucun plan de vol.</p>
+      </div>
+    </aside>
+    <!-- Profil vertical : bande en bas de la carte (relief GLOBE + altitudes prévues) -->
+    <section id="vp-panel" class="vp-panel" hidden>
+      <div class="vp-head">
+        <span class="vp-title"><i class="ph-light ph-chart-line"></i> <span data-i18n="vertProfileTitle">Profil vertical</span></span>
+        <button id="vp-close" class="vp-close" type="button" data-i18n-title="vertProfileClose" title="Masquer"><i class="ph-light ph-x"></i></button>
+      </div>
+      <div id="vertical-profile-graph" class="vp-graph"></div>
+    </section>
+  </main>
+
+  <!-- Barre d'état : indice de configuration de l'API -->
+  <footer class="statusbar">
+    <span class="hint" id="api-hint">…</span>
+  </footer>
+
+  <!-- Modale : saisie de la clé API -->
+  <div id="apikey-overlay" class="overlay" hidden>
+    <div class="modal">
+      <h3><i class="ph-light ph-key"></i> <span data-i18n="apiKeyTitle">Clé CAVVA</span></h3>
+      <p class="modal-text" data-i18n="apiKeyIntro">Saisissez la clé de votre compte CAVVA. Elle est enregistrée localement sur cet ordinateur et sert à récupérer le brief de la séance.</p>
+      <label class="field-label" for="apikey-input" data-i18n="apiKeyLabel">Clé CAVVA</label>
+      <input id="apikey-input" class="field-input" type="text" spellcheck="false" autocomplete="off" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+      <label class="field-label" for="apiurl-input" data-i18n="apiUrlLabel">Adresse du site</label>
+      <input id="apiurl-input" class="field-input" type="text" spellcheck="false" autocomplete="off" placeholder="https://cavva.sixk.me">
+      <p id="apikey-status" class="modal-status" hidden></p>
+      <div class="modal-actions">
+        <button id="btn-apikey-cancel" class="btn"><span data-i18n="btnCancel">Annuler</span></button>
+        <button id="btn-apikey-save" class="btn btn-accent"><i class="ph-light ph-floppy-disk"></i> <span data-i18n="btnSaveKey">Enregistrer</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale : confirmation import aéroports MSFS 2024 -->
+  <div id="msfs-confirm-overlay" class="overlay" hidden>
+    <div class="modal">
+      <h3><i class="ph-light ph-download-simple"></i> <span data-i18n="msfsImportTitle">Importer les aéroports MSFS 2024</span></h3>
+      <p class="modal-text" data-i18n="msfsImportIntro">Extrait toute la base d'aéroports de MSFS 2024 via SimConnect. MSFS 2024 doit être lancé avec un vol en cours. L'opération peut durer plusieurs minutes.</p>
+      <p id="msfs-check-status" class="modal-status" hidden></p>
+      <div class="modal-actions">
+        <button id="btn-msfs-confirm-cancel" class="btn"><span data-i18n="btnCancel">Annuler</span></button>
+        <button id="btn-msfs-confirm-ok" class="btn btn-accent"><i class="ph-light ph-download-simple"></i> <span data-i18n="btnImport">Importer</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale : progression de l'extraction des aéroports MSFS 2024 -->
+  <div id="msfs-progress-overlay" class="overlay" hidden>
+    <div class="modal">
+      <h3><i class="ph-light ph-download-simple"></i> <span data-i18n="msfsProgressTitle">Extraction des aéroports MSFS 2024</span></h3>
+      <p id="msfs-progress-phase" class="modal-text">…</p>
+      <div class="progress-bar"><div id="msfs-progress-bar-fill" class="progress-bar-fill"></div></div>
+      <p id="msfs-progress-count" class="progress-count">0 / 0</p>
+      <p id="msfs-progress-stats" class="progress-stats"></p>
+      <p id="msfs-progress-summary" class="modal-status" hidden></p>
+      <div class="modal-actions">
+        <button id="btn-msfs-progress-close" class="btn" disabled><span data-i18n="btnClose">Fermer</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale : confirmation import navaids MSFS 2024 -->
+  <div id="navaids-confirm-overlay" class="overlay" hidden>
+    <div class="modal">
+      <h3><i class="ph-light ph-broadcast"></i> <span data-i18n="navaidsImportTitle">Importer les navaids MSFS 2024</span></h3>
+      <p class="modal-text" data-i18n="navaidsImportIntro">Reconstruit la base mondiale de navaids (VOR/NDB) de MSFS 2024 par traversance du réseau d'airways. MSFS 2024 doit être lancé avec un vol en cours. L'opération peut durer plusieurs minutes.</p>
+      <p id="navaids-check-status" class="modal-status" hidden></p>
+      <div class="modal-actions">
+        <button id="btn-navaids-confirm-cancel" class="btn"><span data-i18n="btnCancel">Annuler</span></button>
+        <button id="btn-navaids-confirm-ok" class="btn btn-accent"><i class="ph-light ph-broadcast"></i> <span data-i18n="btnImport">Importer</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale : progression de l'extraction des navaids MSFS 2024 -->
+  <div id="navaids-progress-overlay" class="overlay" hidden>
+    <div class="modal">
+      <h3><i class="ph-light ph-broadcast"></i> <span data-i18n="navaidsProgressTitle">Extraction des navaids MSFS 2024</span></h3>
+      <p id="navaids-progress-phase" class="modal-text">…</p>
+      <div class="progress-bar"><div id="navaids-progress-bar-fill" class="progress-bar-fill"></div></div>
+      <p id="navaids-progress-count" class="progress-count">0 / 0</p>
+      <p id="navaids-progress-stats" class="progress-stats"></p>
+      <p id="navaids-progress-summary" class="modal-status" hidden></p>
+      <div class="modal-actions">
+        <button id="btn-navaids-progress-close" class="btn" disabled><span data-i18n="btnClose">Fermer</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale : confirmation de ré-import des données d'élévation (déjà présentes) -->
+  <div id="elev-confirm-overlay" class="overlay" hidden>
+    <div class="modal">
+      <h3><i class="ph-light ph-mountains"></i> <span data-i18n="elevConfirmTitle">Re-télécharger les données ?</span></h3>
+      <p class="modal-text" data-i18n="elevConfirmMsg">Les données d'élévation semblent déjà installées. Re-télécharger l'archive et remplacer les fichiers existants ?</p>
+      <div class="modal-actions">
+        <button id="btn-elev-confirm-cancel" class="btn"><span data-i18n="btnCancel">Annuler</span></button>
+        <button id="btn-elev-confirm-ok" class="btn btn-accent"><i class="ph-light ph-download-simple"></i> <span data-i18n="elevConfirmBtn">Re-télécharger</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale : progression de l'import des données d'élévation -->
+  <div id="elev-progress-overlay" class="overlay" hidden>
+    <div class="modal">
+      <h3><i class="ph-light ph-mountains"></i> <span data-i18n="elevProgressTitle">Import des données d'élévation</span></h3>
+      <p id="elev-progress-phase" class="modal-text">…</p>
+      <div class="progress-bar"><div id="elev-progress-bar-fill" class="progress-bar-fill"></div></div>
+      <p id="elev-progress-size" class="progress-count">—</p>
+      <p id="elev-progress-summary" class="modal-status" hidden></p>
+      <div class="modal-actions">
+        <button id="btn-elev-progress-close" class="btn" disabled><span data-i18n="btnClose">Fermer</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale : import de l'export XML du SIA (espaces aériens) -->
+  <div id="esp-import-overlay" class="overlay" hidden>
+    <div class="modal">
+      <h3><i class="ph-light ph-polygon"></i> <span data-i18n="espImportTitle">Espaces aériens français</span></h3>
+      <p class="modal-text" data-i18n="espImportIntro">Les espaces viennent de l'export XML du SIA, gratuit après création d'un compte sur son site (produit « Données aéronautiques XML », 0,00 €). Déposez le fichier XML_SIA_aaaa-mm-jj.xml dans le dossier prévu, puis convertissez-le ici.</p>
+      <div id="esp-import-etat" class="esp-etat"></div>
+      <div class="modal-actions esp-actions-sec">
+        <button id="btn-esp-dossier" class="btn"><i class="ph-light ph-folder-open"></i> <span data-i18n="espOpenFolder">Ouvrir le dossier</span></button>
+        <button id="btn-esp-fichier" class="btn"><i class="ph-light ph-file-magnifying-glass"></i> <span data-i18n="espPickFile">Choisir un fichier…</span></button>
+      </div>
+      <p id="esp-import-status" class="modal-status" hidden></p>
+      <div class="modal-actions">
+        <button id="btn-esp-import-cancel" class="btn"><span data-i18n="btnCancel">Annuler</span></button>
+        <button id="btn-esp-import-ok" class="btn btn-accent"><i class="ph-light ph-arrows-clockwise"></i> <span data-i18n="espConvert">Convertir</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale : progression de la conversion du fichier du SIA -->
+  <div id="esp-progress-overlay" class="overlay" hidden>
+    <div class="modal">
+      <h3><i class="ph-light ph-polygon"></i> <span data-i18n="espProgressTitle">Conversion de l'export du SIA</span></h3>
+      <p id="esp-progress-phase" class="modal-text">…</p>
+      <div class="progress-bar"><div id="esp-progress-bar-fill" class="progress-bar-fill"></div></div>
+      <p id="esp-progress-summary" class="modal-status" hidden></p>
+      <div class="modal-actions">
+        <button id="btn-esp-progress-close" class="btn" disabled><span data-i18n="btnClose">Fermer</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale : cercle de portée (saisie du rayon en NM) -->
+  <div id="range-overlay" class="overlay" hidden>
+    <div class="modal">
+      <h3><i class="ph-light ph-circle-dashed"></i> <span data-i18n="rangeTitle">Cercle de portée</span></h3>
+      <label class="field-label" for="range-radius" data-i18n="rangeLabel">Rayon (NM)</label>
+      <input id="range-radius" class="field-input" type="number" min="0" step="any" inputmode="decimal" autocomplete="off">
+      <p id="range-error" class="modal-error"></p>
+      <div class="modal-actions">
+        <button id="btn-range-cancel" class="btn"><span data-i18n="btnCancel">Annuler</span></button>
+        <button id="btn-range-ok" class="btn btn-accent"><i class="ph-light ph-circle-dashed"></i> <span data-i18n="rangeDraw">Tracer</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale : confirmation « Nouveau plan de vol » (abandon du plan en cours) -->
+  <div id="newplan-overlay" class="overlay" hidden>
+    <div class="modal">
+      <h3><i class="ph-light ph-file-plus"></i> <span data-i18n="newPlanTitle">Nouveau plan de vol</span></h3>
+      <p class="modal-text" data-i18n="newPlanText">Le plan de vol en cours sera abandonné. Continuer ?</p>
+      <div class="modal-actions">
+        <button id="btn-newplan-cancel" class="btn"><span data-i18n="btnCancel">Annuler</span></button>
+        <button id="btn-newplan-ok" class="btn btn-danger"><span data-i18n="newPlanConfirm">Nouveau plan</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale : aimanter un point tournant sur un aéroport / navaid proche -->
+  <div id="snap-overlay" class="overlay" hidden>
+    <div class="modal">
+      <h3><i class="ph-light ph-map-pin"></i> <span data-i18n="snapTitle">Point tournant à proximité</span></h3>
+      <p class="modal-text" id="snap-text"></p>
+      <div class="modal-actions">
+        <button id="btn-snap-cancel" class="btn"><span data-i18n="snapKeep">Garder la position</span></button>
+        <button id="btn-snap-ok" class="btn btn-accent"><i class="ph-light ph-crosshair"></i> <span data-i18n="snapPlace">Placer dessus</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale « À propos » (bouton « ? » du header) -->
+  <div id="about-overlay" class="overlay" hidden>
+    <div class="modal about-modal">
+      <h3 data-i18n="aboutTitle">À propos</h3>
+      <p class="about-product">Cap CAVVA</p>
+      <p class="about-line" data-i18n="aboutTagline">Le poste de l'organisateur du vol de club : espaces aériens français en vectoriel, zones actives de la séance, plan de vol et suivi en direct.</p>
+      <p class="about-line" data-i18n="aboutLicense">Ce logiciel est distribué sous licence GPL-3.0 ou ultérieure.</p>
+      <p class="about-line" data-i18n-html="aboutSource">Le code source de cette application est disponible sur <a href="https://github.com/brackets-acrobat/cap-cavva" target="_blank" rel="noopener">GitHub</a>.</p>
+      <p class="about-line" data-i18n="aboutCopyright">Copyright 2026 Cyril MILANI.</p>
+      <hr class="about-sep">
+      <p class="about-credit-title">Little Navmap / atools — Alexander Barthel (albar965)</p>
+      <p class="about-line" data-i18n-html="aboutCreditsMethod">L'extraction des navaids depuis MSFS 2024 (<code>extract-navaids-msfs.js</code>) s'inspire directement de la méthode du projet atools / Little Navmap d'Alexander Barthel.</p>
+      <ul class="about-links">
+        <li>atools : <a href="https://github.com/albar965/atools" target="_blank" rel="noopener">https://github.com/albar965/atools</a></li>
+        <li>Little Navmap : <a href="https://github.com/albar965/littlenavmap" target="_blank" rel="noopener">https://github.com/albar965/littlenavmap</a></li>
+      </ul>
+      <div class="modal-actions about-footer">
+        <span id="about-version" class="about-version"></span>
+        <button id="btn-about-close" class="btn btn-accent"><span data-i18n="btnClose">Fermer</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bannière de mise à jour (electron-updater) : masquée sauf téléchargement / prête -->
+  <div id="update-banner" class="update-banner" hidden>
+    <i class="ph-light ph-arrow-circle-up"></i>
+    <span id="update-banner-text" class="update-banner-text"></span>
+    <button id="update-banner-action" class="btn btn-accent" hidden></button>
+  </div>
+
+  <!-- Un fichier par fonctionnalité. L'ordre fait la dépendance : etat.js pose
+       les bases partagées, carte.js crée la carte, le reste s'y accroche, et
+       renderer.js câble le tout en dernier. -->
+  <script src="i18n.js"></script>
+  <script src="js/etat.js"></script>
+  <script src="js/features/carte.js"></script>
+  <script src="js/features/couches-msfs.js"></script>
+  <script src="js/features/espaces-obligations.js"></script>
+  <script src="js/features/espaces-aeriens.js"></script>
+  <script src="js/features/controles-carte.js"></script>
+  <script src="js/features/menu-contextuel.js"></script>
+  <script src="js/features/cercles-portee.js"></script>
+  <script src="js/features/route.js"></script>
+  <script src="js/features/declinaison.js"></script>
+  <script src="js/features/etiquettes-legs.js"></script>
+  <script src="js/features/points-tournants.js"></script>
+  <script src="js/features/dessin-route.js"></script>
+  <script src="js/features/plan-io.js"></script>
+  <script src="js/features/panneau-plan.js"></script>
+  <script src="js/features/copier-points.js"></script>
+  <script src="js/features/profil-espaces.js"></script>
+  <script src="js/features/profil-vertical.js"></script>
+  <script src="js/features/avion.js"></script>
+  <script src="js/features/vent.js"></script>
+  <script src="js/features/imports-msfs.js"></script>
+  <script src="js/features/espaces-import.js"></script>
+  <script src="js/features/cle-api.js"></script>
+  <script src="js/features/apropos.js"></script>
+  <script src="js/features/maj.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
