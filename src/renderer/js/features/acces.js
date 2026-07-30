@@ -73,6 +73,7 @@ function accesAppliquer(verdict) {
 
   const lien = $('acces-lien-compte');
   if (lien && verdict && verdict.urlCompte) lien.href = verdict.urlCompte;
+  if (verdict) lastConfig = { apiBaseUrl: verdict.apiBaseUrl, cleConfiguree: verdict.cleConfiguree };
 }
 
 // Demande son avis au serveur, puis applique le verdict.
@@ -96,6 +97,12 @@ async function accesVerifier() {
 async function initAcces() {
   let local = null;
   try { local = await window.cap.accesEtat(); } catch (_) {}
+
+  // `lastConfig` alimente la modale de saisie (elle y relit l'adresse du site).
+  // Elle n'est normalement posée qu'au démarrage de l'application — trop tard
+  // ici : sans ça, ouvrir la modale depuis l'écran d'accueil présenterait un
+  // champ d'adresse vide, et l'enregistrer effacerait une adresse personnalisée.
+  if (local) lastConfig = { apiBaseUrl: local.apiBaseUrl, cleConfiguree: local.cleConfiguree };
 
   const lien = $('acces-lien-compte');
   if (lien && local && local.urlCompte) lien.href = local.urlCompte;

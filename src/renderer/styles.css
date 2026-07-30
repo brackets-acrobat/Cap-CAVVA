@@ -696,7 +696,11 @@ main.profil-open .leaflet-control-scale { opacity: 0; visibility: hidden; }
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  /* AU-DESSUS DE TOUT, écran d'accueil compris (2000) et bannière de mise à
+     jour (2000). Une modale qui s'ouvre derrière quelque chose est une modale
+     qui n'existe pas : c'est ce qui rendait la saisie de la clé inatteignable
+     depuis l'écran d'accueil, là où elle est justement indispensable. */
+  z-index: 2100;
 }
 .overlay[hidden] { display: none; }
 .modal {
