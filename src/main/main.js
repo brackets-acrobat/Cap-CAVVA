@@ -17,7 +17,8 @@
 //   elevation.js    relief GLOBE et profil vertical
 //   declinaison.js  déclinaison magnétique (WMM)
 //   plan-io.js      sauvegarde et ouverture d'un plan de vol
-//   brief-source.js brief de la séance téléchargé depuis CAVVA
+//   brief-source.js briefs de séance téléchargés depuis CAVVA
+//   acces.js        l'application est-elle ouverte à cet utilisateur ?
 //   updater.js      mise à jour automatique
 //
 // Si un handler ci-dessous dépasse trois lignes, c'est qu'il appartient à un
@@ -35,6 +36,7 @@ const airportsData = require('./airports-data');
 const siaImport = require('./sia-import');
 const siaData = require('./sia-data');
 const briefSource = require('./brief-source');
+const acces = require('./acces');
 const elevation = require('./elevation');
 const declinaison = require('./declinaison');
 const planIo = require('./plan-io');
@@ -53,9 +55,28 @@ try {
   app.setPath('userData', userData);
 } catch (_) { /* repli silencieux sur l'emplacement par défaut */ }
 
+// Une seule instance à la fois. Deux fenêtres partageraient le même dossier de
+// travail : elles se disputeraient le cache de Chromium (« Unable to move the
+// cache »), et surtout elles écriraient toutes les deux dans settings.json — la
+// dernière à fermer écraserait la clé ou la date de validation de l'autre.
+//
+// Demandé APRÈS setPath('userData') : le verrou d'Electron est justement posé
+// sur ce dossier, il doit donc être connu avant.
+const instanceUnique = app.requestSingleInstanceLock();
+if (!instanceUnique) app.quit();
+
 let fenetre = null;
 let config = chargerConfig();
 const sim = new SimConnectClient();
+
+// Un second lancement ne fait rien de neuf : il ramène la fenêtre existante au
+// premier plan, ce que l'utilisateur cherchait probablement en double-cliquant.
+app.on('second-instance', () => {
+  if (!fenetre || fenetre.isDestroyed()) return;
+  if (fenetre.isMinimized()) fenetre.restore();
+  fenetre.show();
+  fenetre.focus();
+});
 
 function diffuser(canal, charge) {
   BrowserWindow.getAllWindows().forEach((w) => {
@@ -85,7 +106,10 @@ sim.on('scan', (trame) => diffuser('sc-scan', trame));
 // executeJavaScript (pas de script inline : la CSP est stricte).
 function creerSplash() {
   const splash = new BrowserWindow({
-    width: 640,
+    // Taille exacte de src/img/img_cap_cavva01.jpg : le splash est en
+    // object-fit: cover, une fenêtre plus étroite rognerait le titre incrusté
+    // en bas à droite de l'image.
+    width: 798,
     height: 435,
     frame: false,
     resizable: false,
@@ -155,6 +179,16 @@ function configPublique() {
 }
 
 ipcMain.handle('app-config', async () => configPublique());
+
+// Verrou d'accès : rien n'est chargé tant que la clé n'a pas été acceptée au
+// moins une fois. 'acces-etat' répond sans réseau (peinture de l'écran
+// d'accueil), 'acces-verifier' demande son avis au serveur et fait foi.
+ipcMain.handle('acces-etat', async () => acces.etat());
+ipcMain.handle('acces-verifier', async () => {
+  const verdict = await acces.verifier();
+  config = chargerConfig();   // la validation vient peut-être d'être horodatée
+  return verdict;
+});
 
 // Enregistre la clé CAVVA saisie dans l'UI, recharge la config et notifie.
 ipcMain.handle('config-set-key', async (_e, { apiKey, apiBaseUrl } = {}) => {
@@ -226,6 +260,9 @@ ipcMain.handle('update-install', async () => { quitAndInstall(); return { ok: tr
 // --- Cycle de vie ------------------------------------------------------------
 
 app.whenReady().then(() => {
+  // Instance surnuméraire : app.quit() est déjà demandé, on ne crée rien.
+  if (!instanceUnique) return;
+
   const splash = creerSplash();
   creerFenetre();   // fenêtre principale masquée, chargée pendant le splash
   setTimeout(() => {

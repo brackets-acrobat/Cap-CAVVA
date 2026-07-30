@@ -45,6 +45,10 @@ contextBridge.exposeInMainWorld('cap', {
   siaImporter: (chemin) => ipcRenderer.invoke('sia-importer', chemin),
   onSiaProgress: (cb) => abonner('sia-progress', cb),
 
+  // Verrou d'accès (clé CAVVA)
+  accesEtat: () => ipcRenderer.invoke('acces-etat'),
+  accesVerifier: () => ipcRenderer.invoke('acces-verifier'),
+
   // Briefs de séance (CAVVA) — le calendrier complet, en une fois
   briefsCharger: () => ipcRenderer.invoke('briefs-charger'),
   briefVerifierCle: () => ipcRenderer.invoke('brief-verifier-cle'),

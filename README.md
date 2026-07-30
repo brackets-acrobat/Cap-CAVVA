@@ -119,6 +119,18 @@ publiés — 18 saisies, 18 rapprochées.
 Le format, les codes d'erreur et le contrôleur PHP à écrire sont dans
 **[FORMAT-BRIEF.md](FORMAT-BRIEF.md)**.
 
+Le secret dont dérive la signature **n'est pas dans le dépôt** — celui-ci est
+public. Au premier clonage :
+
+```bash
+npm run brief:secret
+```
+
+Il écrit `src/main/brief-secret.js`, gitignoré, embarqué à l'empaquetage par
+`npm run dist`. `npm run brief:cle` en donne la clé dérivée, à poser dans le
+`config.local.php` du site. **À sauvegarder hors du dépôt** : le perdre oblige à
+en refaire un et à remettre la clé côté serveur.
+
 Éprouver le client sans serveur CAVVA :
 
 ```bash

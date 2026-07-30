@@ -106,8 +106,26 @@ function enregistrerCle(apiKey, apiBaseUrl) {
   return chargerConfig();
 }
 
+// Mémorise la date de la dernière validation RÉUSSIE de la clé auprès de CAVVA
+// (voir acces.js). C'est ce qui permet à l'application de s'ouvrir hors ligne
+// une fois la clé éprouvée : sans cette trace, une coupure réseau la
+// verrouillerait, y compris pour convertir un export du SIA ou préparer un plan.
+//
+// `null` efface la trace — ce que fait un refus explicite du serveur.
+function enregistrerValidation(dateIso) {
+  const p = cheminSettings();
+  const courant = lireFichier(p) || {};
+
+  if (dateIso) courant.cleValideeLe = dateIso;
+  else delete courant.cleValideeLe;
+
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, JSON.stringify(courant, null, 2), 'utf-8');
+  return chargerConfig();
+}
+
 module.exports = {
-  chargerConfig, enregistrerCle,
+  chargerConfig, enregistrerCle, enregistrerValidation,
   dossierBase, dossierDonnees, dossierSia,
   DEFAULTS,
 };

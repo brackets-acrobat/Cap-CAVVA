@@ -41,6 +41,8 @@
 // refusée » de « hors ligne » de « rien de publié » :
 //
 //   nokey        aucune clé enregistrée
+//   secret       cette copie de l'application n'a pas de secret de signature
+//                (dépôt cloné sans brief-secret.js) — elle ne peut RIEN vérifier
 //   unauthorized clé refusée par le serveur (401 / 403)
 //   absent       le serveur ne publie rien (404) — pas une panne
 //   network      serveur injoignable, délai dépassé, autre code HTTP
@@ -50,7 +52,7 @@
 // Le format attendu est spécifié dans FORMAT-BRIEF.md, à la racine du dépôt.
 // ============================================================
 
-const { verifier } = require('./brief-crypto');
+const { verifier, secretPresent } = require('./brief-crypto');
 
 // Version de format que ce client sait lire. Un numéro plus élevé est refusé
 // plutôt qu'interprété de travers : mieux vaut « mettez à jour l'application »
@@ -231,6 +233,10 @@ function normaliser(obj) {
 // L'en-tête supprime la fenêtre — et une requête au lieu de deux.
 async function resoudreBriefs(apiKey, apiBaseUrl) {
   if (!apiKey) throw echec('nokey', 'aucune clé CAVVA enregistrée');
+  // Contrôlé AVANT la requête : sans secret, toute signature serait déclarée
+  // invalide, et l'utilisateur chercherait une falsification là où il n'y a
+  // qu'une copie de l'application incomplète.
+  if (!secretPresent()) throw echec('secret', 'aucun secret de signature dans cette copie de l\'application');
 
   const url = urlBriefs(apiBaseUrl);
   const rep = await telecharger(url, apiKey);
@@ -266,6 +272,7 @@ async function resoudreBriefs(apiKey, apiBaseUrl) {
 // Un 404 dit « clé bonne, rien de publié ». Seul 401/403 met la clé en cause.
 async function verifierCle(apiKey, apiBaseUrl) {
   if (!apiKey) return { ok: false, code: 'nokey' };
+  if (!secretPresent()) return { ok: false, code: 'secret' };
   try {
     await telecharger(urlBriefs(apiBaseUrl), apiKey);
     return { ok: true };

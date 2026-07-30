@@ -173,6 +173,18 @@ const TRANSLATIONS = {
     basemapTitle: 'Fond de carte',
     followTitle: 'Suivre l\'avion',
 
+    // Écran d'accueil : verrou tant que la clé CAVVA n'est pas acceptée
+    accesTagline: 'Le poste de l\'organisateur du vol de club.',
+    accesIntro: 'Cette application est réservée aux membres du CAVVA. Saisissez la clé de votre compte pour y accéder.',
+    accesEnterKey: 'Saisir ma clé CAVVA',
+    accesRetry: 'Réessayer',
+    accesGetKey: 'Obtenir une clé sur le site CAVVA',
+    accesChecking: 'Vérification de la clé auprès de CAVVA…',
+    accesRefused: 'Clé refusée par le serveur : elle est inconnue, révoquée, ou le compte n\'est plus actif.',
+    accesNetwork: 'Serveur CAVVA injoignable. La clé doit être vérifiée au moins une fois avant que l\'application puisse s\'ouvrir hors ligne.',
+    accesSecret: 'Cette copie de l\'application n\'a pas de secret de signature : elle ne peut vérifier ni la clé, ni les briefs.',
+    accesOfflineHint: 'ouverte hors ligne, clé non revérifiée',
+
     // Briefs des séances (calendrier téléchargé depuis CAVVA)
     briefToggle: 'Briefs des séances',
     briefTitle: 'Briefs des séances',
@@ -194,6 +206,7 @@ const TRANSLATIONS = {
     briefZoneAsTyped: 'saisi sur CAVVA : {txt}',
     briefZoneUnknown: 'Aucune zone du cycle chargé ne correspond à cette saisie. Le texte est reproduit tel quel.',
     briefErrNoKey: 'Aucune clé CAVVA enregistrée : les briefs sont réservés aux comptes du club.',
+    briefErrSecret: 'Cette copie de l\'application n\'a pas de secret de signature : elle ne peut vérifier aucun brief. Voir outils/injecter-secret.js.',
     briefErrUnauthorized: 'Clé CAVVA refusée par le serveur.',
     briefErrAbsent: 'Aucune séance publiée pour le moment.',
     briefErrNetwork: 'Serveur CAVVA injoignable.',
@@ -409,6 +422,18 @@ const TRANSLATIONS = {
 
     // Landing-spot popup ("Landing spots" layer)
     // Flight plan panel (legs table)
+    // Welcome screen: locked until the CAVVA key is accepted
+    accesTagline: 'The club-night flight organiser\'s desk.',
+    accesIntro: 'This application is reserved for CAVVA members. Enter your account key to get in.',
+    accesEnterKey: 'Enter my CAVVA key',
+    accesRetry: 'Try again',
+    accesGetKey: 'Get a key on the CAVVA site',
+    accesChecking: 'Checking the key with CAVVA…',
+    accesRefused: 'Key rejected by the server: it is unknown, revoked, or the account is no longer active.',
+    accesNetwork: 'CAVVA server unreachable. The key must be verified at least once before the application can open offline.',
+    accesSecret: 'This copy of the application has no signing secret: it can verify neither the key nor the briefs.',
+    accesOfflineHint: 'opened offline, key not re-checked',
+
     // Session briefs (calendar downloaded from CAVVA)
     briefToggle: 'Session briefs',
     briefTitle: 'Session briefs',
@@ -430,6 +455,7 @@ const TRANSLATIONS = {
     briefZoneAsTyped: 'entered on CAVVA: {txt}',
     briefZoneUnknown: 'No zone in the loaded cycle matches this entry. The text is shown as typed.',
     briefErrNoKey: 'No CAVVA key stored: the briefs are reserved for club accounts.',
+    briefErrSecret: 'This copy of the application has no signing secret: it cannot verify any brief. See outils/injecter-secret.js.',
     briefErrUnauthorized: 'CAVVA key rejected by the server.',
     briefErrAbsent: 'No session published at the moment.',
     briefErrNetwork: 'CAVVA server unreachable.',

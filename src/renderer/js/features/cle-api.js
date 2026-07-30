@@ -47,7 +47,12 @@ $('btn-apikey-save').addEventListener('click', async () => {
         st.textContent = t(verdict.code === 'unauthorized' ? 'apiKeyRefused' : 'apiKeyUnreachable');
       }
     }
-    setTimeout(() => { $('apikey-overlay').hidden = true; }, 2200);
+    setTimeout(() => {
+      $('apikey-overlay').hidden = true;
+      // Saisie depuis l'écran d'accueil : la clé vient de changer, le verdict
+      // d'accès aussi. C'est le seul chemin qui déverrouille l'application.
+      if (document.body.classList.contains('est-verrouille')) accesVerifier();
+    }, 2200);
   } else {
     st.className = 'modal-status is-error';
     st.textContent = t('apiKeyErr').replace('{err}', res.error || '?');

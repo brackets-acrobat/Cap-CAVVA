@@ -4,7 +4,12 @@
  */
 
 // ============================================================
-// controles-carte.js — menus déroulants « couches » et « fond de carte ».
+// controles-carte.js — menus déroulants de la carte : couches MSFS, fond de
+// carte, espaces aériens.
+//
+// Ils s'ouvrent au SURVOL et se replient quand la souris s'en éloigne : sur une
+// carte, un menu qui demande un clic pour s'ouvrir et un autre pour se fermer
+// coûte deux gestes là où le regard suffit.
 // ============================================================
 
 // Contrôles déroulants (haut-droite) : couches MSFS + fond de carte, côte à côte.
@@ -51,17 +56,51 @@ function ajouterControlesCarte() {
     L.DomEvent.disableClickPropagation(div);
     L.DomEvent.disableScrollPropagation(div);
 
-    // Ouverture/fermeture des deux menus (un seul ouvert à la fois)
+    // ------------------------------------------------------------
+    // Ouverture au SURVOL, repli quand on s'en éloigne. Un seul menu ouvert.
+    //
+    // Le repli est DIFFÉRÉ, et ce n'est pas du confort : le panneau est posé
+    // 6 px sous son bouton (top: calc(100% + 6px)), et ces 6 px n'appartiennent
+    // à aucun des deux. Sans délai, le simple fait de descendre vers le menu le
+    // referait disparaître — et il ne se rouvrirait pas, puisqu'il n'y aurait
+    // plus rien à survoler.
+    //
+    // Le survol ne suffit pas non plus tout seul : le panneau des espaces
+    // contient deux champs de saisie. Si la souris s'écarte pendant qu'on tape
+    // un plancher, le menu doit rester ouvert — d'où le contrôle sur l'élément
+    // qui a le focus. C'est aussi ce qui rend les menus atteignables au clavier.
+    // ------------------------------------------------------------
+    const DELAI_REPLI_MS = 220;
     const dropdowns = [...div.querySelectorAll('.map-dropdown')];
+    let replier = null;
+
+    function basculer(dd, ouvert) {
+      dd.querySelector('.map-dd-panel').hidden = !ouvert;
+      dd.querySelector('.map-dd-btn').setAttribute('aria-expanded', String(ouvert));
+    }
+
+    function ouvrir(dd) {
+      clearTimeout(replier);
+      replier = null;
+      dropdowns.forEach((o) => basculer(o, o === dd));
+    }
+
+    function programmerRepli() {
+      clearTimeout(replier);
+      replier = setTimeout(() => {
+        dropdowns.forEach((o) => {
+          if (!o.contains(document.activeElement)) basculer(o, false);
+        });
+      }, DELAI_REPLI_MS);
+    }
+
     dropdowns.forEach((dd) => {
-      const btn = dd.querySelector('.map-dd-btn');
-      const panel = dd.querySelector('.map-dd-panel');
-      btn.addEventListener('click', () => {
-        const open = panel.hidden;
-        dropdowns.forEach((o) => { o.querySelector('.map-dd-panel').hidden = true; o.querySelector('.map-dd-btn').setAttribute('aria-expanded', 'false'); });
-        panel.hidden = !open;
-        btn.setAttribute('aria-expanded', String(open));
-      });
+      dd.addEventListener('mouseenter', () => ouvrir(dd));
+      dd.addEventListener('mouseleave', programmerRepli);
+      // Clavier : tabuler jusqu'au bouton ouvre le menu, en sortir le referme.
+      // Un clic passe par là aussi, puisqu'il donne le focus au bouton.
+      dd.addEventListener('focusin', () => ouvrir(dd));
+      dd.addEventListener('focusout', programmerRepli);
     });
 
     // Couches

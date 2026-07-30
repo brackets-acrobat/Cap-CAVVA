@@ -93,12 +93,16 @@ i[class^="ph-"], i[class*=" ph-"] {
   z-index: 1000;
 }
 .topbar i[class^="ph-"], .topbar i[class*=" ph-"] { color: #fff; }
-.brand { display: flex; align-items: center; gap: 12px; }
+/* Les deux groupes ont échangé leur contenu (compte et simulateur à gauche,
+   panneaux et imports à droite). Les écarts suivent le contenu et non le
+   conteneur : chaque bouton garde exactement l'espacement qu'il avait. */
+.brand { display: flex; align-items: center; gap: 10px; }
 /* Hauteur BORNÉE : elle fixe celle de la barre supérieure, et la largeur suit
-   d'elle-même pour garder les proportions de l'image. */
-.brand-logo { display: block; height: 100px; width: auto; }
+   d'elle-même pour garder les proportions de l'image. Les 2 px rendent au logo
+   les 12 px qui le séparaient du premier bouton. */
+.brand-logo { display: block; height: 100px; width: auto; margin-right: 2px; }
 
-.conn { display: flex; align-items: center; gap: 10px; }
+.conn { display: flex; align-items: center; gap: 12px; }
 
 /* États de connexion portés par le bouton MSFS (remplace pastille + texte) :
    déconnecté = rouge · connexion = orange · connecté = vert. */
@@ -173,7 +177,9 @@ i[class^="ph-"], i[class*=" ph-"] {
 .dropdown {
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
+  /* Ancré à DROITE : le bouton « Importer » est désormais à l'extrémité droite
+     de la barre. Aligné à gauche, le menu déborderait de la fenêtre. */
+  right: 0;
   z-index: 1100;
   min-width: 200px;
   padding: 4px;
@@ -331,6 +337,62 @@ i[class^="ph-"], i[class*=" ph-"] {
   transform-origin: center center;
   pointer-events: none;
 }
+
+/* ============================================================
+   Écran d'accueil — verrou tant que la clé CAVVA n'est pas acceptée.
+   Le reste de l'interface est retiré du flux, pas seulement masqué : rien ne
+   doit se mettre en page derrière, et la carte n'est de toute façon pas créée
+   (cf. renderer.js).
+   ============================================================ */
+
+body.est-verrouille > .topbar,
+body.est-verrouille > .subbar,
+body.est-verrouille > main,
+body.est-verrouille > .statusbar { display: none; }
+
+.acces-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--ardoise);
+}
+body:not(.est-verrouille) .acces-gate { display: none; }
+
+.acces-carte {
+  width: 100%;
+  max-width: 460px;
+  padding: 28px 32px 24px;
+  text-align: center;
+  background: var(--panel);
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, .45);
+}
+.acces-logo { display: block; height: 96px; width: auto; margin: 0 auto 8px; }
+.acces-titre { margin: 0 0 4px; font-size: 1.5rem; color: var(--title); }
+.acces-sous { margin: 0 0 18px; font-size: 13px; color: var(--muted); }
+.acces-texte { margin: 0 0 18px; font-size: 13.5px; color: var(--ink); line-height: 1.55; }
+
+/* Verdict du serveur : rouge pour un refus, ardoise pour une attente. */
+.acces-message {
+  margin: 0 0 16px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  text-align: left;
+}
+.acces-message[hidden] { display: none; }
+.acces-erreur { background: #fee2e2; color: #991b1b; }
+.acces-info   { background: var(--bande); color: #334155; }
+
+.acces-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.acces-aide { margin: 16px 0 18px; font-size: 12.5px; }
+.acces-aide a { color: var(--accent); }
+.acces-gate .btn-lang { display: inline-flex; }
 
 /* --- Contenu : la carte occupe tout l'espace restant --- */
 main { flex: 1; min-height: 0; padding: 0; position: relative; }
@@ -1013,15 +1075,26 @@ main.brief-open .leaflet-top.leaflet-right { right: max(33.333%, 300px); transit
   color: var(--muted);
 }
 
-/* --- La liste des séances, sous le détail de celle qui est choisie --- */
+/* --- La liste des séances. Le détail de la séance choisie se déplie sous sa
+       propre ligne, en accordéon : on ne remonte jamais le panneau. --- */
 .brief-liste {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
 }
+.brief-entree { display: flex; flex-direction: column; }
+/* Le détail prolonge visuellement la carte au-dessus : même liseré ambre, coins
+   du haut carrés pour que les deux ne fassent qu'un bloc. */
+.brief-detail {
+  padding: 10px 10px 12px;
+  border: 1px solid #fcd34d;
+  border-top: 0;
+  border-left: 3px solid var(--ambre);
+  border-radius: 0 0 6px 6px;
+  background: var(--panel);
+}
+.brief-detail .brief-bloc { margin-bottom: 8px; }
+.brief-detail .brief-sous-titre { margin-top: 10px; }
 .brief-carte {
   display: flex;
   flex-direction: column;
@@ -1043,6 +1116,9 @@ main.brief-open .leaflet-top.leaflet-right { right: max(33.333%, 300px); transit
   border-left-color: var(--ambre);
   background: #fef3c7;
   border-color: #fcd34d;
+  /* Raccordée au détail qui la prolonge en dessous. */
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 /* Une date passée reste consultable, mais s'annonce comme telle. */
 .brief-carte.est-passee { opacity: .55; }

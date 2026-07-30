@@ -13,6 +13,13 @@
 //
 // Les scripts partagent la portée globale — pas de modules ES. C'est la
 // convention de NavXpressVFR : l'ordre de chargement fait la dépendance.
+//
+// ── Rien ne démarre avant la clé ────────────────────────────────────────────
+// demarrerApplication() n'est PAS appelée ici : c'est acces.js qui la déclenche,
+// une fois la clé CAVVA acceptée. Tant qu'elle ne l'est pas, la carte Leaflet
+// n'existe pas, aucune tuile n'est téléchargée et les 2 200 espaces aériens ne
+// sont pas lus. Les écouteurs posés au chargement des fichiers de features, eux,
+// sont inoffensifs : ils attendent des éléments qui ne bougeront pas.
 // ============================================================
 
 // --- Connexion au simulateur -------------------------------------------------
@@ -38,17 +45,25 @@ window.cap.onConfig((cfg) => { lastConfig = cfg; renderApiHint(); });
 
 // --- Initialisation ----------------------------------------------------------
 
+// Appelée UNE SEULE FOIS par acces.js, après que la clé a été acceptée.
+function demarrerApplication() {
+  initMap();
+  setStatus('disconnected');
+  majBoutonsPlan();   // « sauvegarder » désactivé tant que départ et arrivée manquent
+
+  // Espaces aériens : chargés depuis le GeoJSON converti, s'il y en a un. Au
+  // premier lancement il n'y en a pas — la carte s'ouvre sans, et le menu
+  // Importer explique où prendre le fichier du SIA.
+  chargerEspaces();
+
+  window.cap.getConfig().then((cfg) => {
+    lastConfig = cfg;
+    renderApiHint();
+  });
+}
+
+// Les traductions d'abord : l'écran d'accueil parle avant que l'application
+// existe. Puis le verrou, qui décide de la suite.
 initI18n();
-initMap();
-setStatus('disconnected');
-majBoutonsPlan();   // « sauvegarder » désactivé tant que départ et arrivée manquent
-
-// Espaces aériens : chargés depuis le GeoJSON converti, s'il y en a un. Au
-// premier lancement il n'y en a pas — la carte s'ouvre sans, et le menu
-// Importer explique où prendre le fichier du SIA.
-chargerEspaces();
-
-window.cap.getConfig().then((cfg) => {
-  lastConfig = cfg;
-  renderApiHint();
-});
+updateAccesLangue();
+initAcces();

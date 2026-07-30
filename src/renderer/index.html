@@ -11,10 +11,55 @@
   <link rel="stylesheet" href="styles.css">
   <script src="vendor/leaflet/leaflet.js"></script>
 </head>
-<body>
+<body class="est-verrouille">
+  <!-- Écran d'accueil : seul visible tant que la clé CAVVA n'a pas été acceptée.
+       La carte, les espaces et le plan de vol ne sont PAS chargés derrière (voir
+       renderer.js) — rien ne tourne pour rien. -->
+  <div id="acces-gate" class="acces-gate">
+    <div class="acces-carte">
+      <img class="acces-logo" src="../img/dr400_banniere.png" alt="Cap CAVVA">
+      <h1 class="acces-titre">Cap CAVVA</h1>
+      <p class="acces-sous" data-i18n="accesTagline">Le poste de l'organisateur du vol de club.</p>
+      <p class="acces-texte" data-i18n="accesIntro">Cette application est réservée aux membres du CAVVA. Saisissez la clé de votre compte pour y accéder.</p>
+      <p id="acces-message" class="acces-message" hidden></p>
+      <div class="acces-actions">
+        <button id="acces-saisir" class="btn btn-accent"><i class="ph-light ph-key"></i> <span data-i18n="accesEnterKey">Saisir ma clé CAVVA</span></button>
+        <button id="acces-reessayer" class="btn" hidden><i class="ph-light ph-arrows-clockwise"></i> <span data-i18n="accesRetry">Réessayer</span></button>
+      </div>
+      <p class="acces-aide"><a id="acces-lien-compte" href="#" target="_blank" rel="noopener" data-i18n="accesGetKey">Obtenir une clé sur le site CAVVA</a></p>
+      <button id="acces-lang" class="btn-lang" data-i18n-title="toggleTitle" title="Changer de langue / Switch language">
+        <span class="lang-fr lang-active">FR</span>
+        <span class="lang-separator">|</span>
+        <span class="lang-en">EN</span>
+      </button>
+    </div>
+  </div>
+
   <header class="topbar">
+    <!-- Groupe GAUCHE : le logo, puis ce qui concerne le compte et le simulateur -->
     <div class="brand">
       <img class="brand-logo" src="../img/dr400_banniere.png" alt="Cap CAVVA">
+      <!-- Bouton « ? » : ouvre la modale « À propos » (comme NavXpressVFR) -->
+      <button id="btn-about" class="btn btn-icon" data-i18n-title="btnAboutTooltip" title="À propos" aria-label="À propos">
+        <i class="ph-light ph-question-mark"></i>
+      </button>
+      <button id="btn-api-key" class="btn" data-i18n-title="apiKeyTitle" title="Clé CAVVA"><i class="ph-light ph-key"></i> <span data-i18n="btnApiKey">Clé CAVVA</span></button>
+      <button id="btn-connect" class="btn btn-state-off"><i class="ph-light ph-plugs"></i> Connecter MSFS2024</button>
+    </div>
+    <!-- Groupe DROIT : les panneaux et les imports, puis la bascule de langue -->
+    <div class="conn">
+      <!-- Briefs des séances : téléchargés depuis CAVVA, signature vérifiée -->
+      <button id="btn-brief" class="btn btn-icon" data-i18n-title="briefToggle" title="Briefs des séances" aria-pressed="false">
+        <i class="ph-light ph-clipboard-text"></i>
+      </button>
+      <!-- Afficher / masquer le profil vertical (relief le long du plan) -->
+      <button id="btn-profil" class="btn btn-icon" data-i18n-title="vertProfileToggle" title="Afficher le profil vertical" aria-pressed="false">
+        <i class="ph-light ph-chart-line"></i>
+      </button>
+      <!-- Afficher / masquer le tableau des legs (panneau « Plan de vol ») -->
+      <button id="btn-legs" class="btn btn-icon" data-i18n-title="legsToggle" title="Afficher plan de vol" aria-pressed="false">
+        <i class="ph-light ph-table"></i>
+      </button>
       <!-- Import MSFS 2024 : bouton-icône + menu déroulant (aéroports / navaids) -->
       <div class="import-menu">
         <button id="btn-import" class="btn btn-icon" data-i18n-title="btnImport" title="Importer" aria-haspopup="true" aria-expanded="false">
@@ -27,26 +72,6 @@
           <button id="menu-import-espaces" class="dropdown-item"><span data-i18n="menuImportEspaces">Espaces aériens (SIA)</span></button>
         </div>
       </div>
-      <!-- Afficher / masquer le tableau des legs (panneau « Plan de vol ») -->
-      <button id="btn-legs" class="btn btn-icon" data-i18n-title="legsToggle" title="Afficher plan de vol" aria-pressed="false">
-        <i class="ph-light ph-table"></i>
-      </button>
-      <!-- Afficher / masquer le profil vertical (relief le long du plan) -->
-      <button id="btn-profil" class="btn btn-icon" data-i18n-title="vertProfileToggle" title="Afficher le profil vertical" aria-pressed="false">
-        <i class="ph-light ph-chart-line"></i>
-      </button>
-      <!-- Brief de la séance : téléchargé depuis CAVVA, signature vérifiée -->
-      <button id="btn-brief" class="btn btn-icon" data-i18n-title="briefToggle" title="Brief de la séance" aria-pressed="false">
-        <i class="ph-light ph-clipboard-text"></i>
-      </button>
-    </div>
-    <div class="conn">
-      <!-- Bouton « ? » : ouvre la modale « À propos » (comme NavXpressVFR) -->
-      <button id="btn-about" class="btn btn-icon" data-i18n-title="btnAboutTooltip" title="À propos" aria-label="À propos">
-        <i class="ph-light ph-question-mark"></i>
-      </button>
-      <button id="btn-connect" class="btn btn-state-off"><i class="ph-light ph-plugs"></i> Connecter MSFS2024</button>
-      <button id="btn-api-key" class="btn" data-i18n-title="apiKeyTitle" title="Clé CAVVA"><i class="ph-light ph-key"></i> <span data-i18n="btnApiKey">Clé CAVVA</span></button>
       <!-- Bouton toggle bilingue FR / EN (en haut à droite, comme NavXpressVFR) -->
       <button id="btn-lang-toggle" class="btn-lang" data-i18n-title="toggleTitle" title="Changer de langue / Switch language">
         <span class="lang-fr lang-active">FR</span>
@@ -380,6 +405,7 @@
   <script src="js/features/cle-api.js"></script>
   <script src="js/features/apropos.js"></script>
   <script src="js/features/maj.js"></script>
+  <script src="js/features/acces.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

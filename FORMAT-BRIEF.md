@@ -83,8 +83,9 @@ moment de l'écriture — là, il n'y a pas de course.
 
 ### La clé
 
-Le client dérive sa clé par `scrypt`, que PHP n'a pas en standard. Le côté CAVVA
-reçoit donc la **clé dérivée**, une bonne fois :
+Le client dérive sa clé par `scrypt` à partir d'un **secret**, que PHP n'a pas
+les moyens de reproduire. Le côté CAVVA reçoit donc la **clé dérivée**, une
+bonne fois :
 
 ```bash
 npm run brief:cle
@@ -96,11 +97,34 @@ npm run brief:cle
 'cap_cavva' => ['cle_brief' => '…64 caractères hexadécimaux…'],
 ```
 
-**Limite assumée** : cette clé est dérivée d'un secret présent dans le code de
-l'application, parce que l'application doit pouvoir vérifier seule. Elle empêche
-un serveur détourné (fichier `hosts`, proxy, point d'accès public) d'annoncer
-d'autres zones actives. Elle ne protège pas de quelqu'un qui déballerait
-l'archive `asar`. C'est la même doctrine que `data-crypto.js` dans Tours.
+### Le secret, et où il vit
+
+**Pas dans le dépôt.** `Cap-CAVVA` est public : un secret versionné serait
+lisible par tout le monde, sans même avoir à déballer l'application, et la
+signature ne vaudrait plus rien. `brief-crypto.js` le résout dans cet ordre :
+
+1. `CAP_CAVVA_BRIEF_SECRET` — en développement, le temps d'un `npm start` ;
+2. `src/main/brief-secret.js` — fichier généré, gitignoré, écrit par
+   `outils/injecter-secret.js` et embarqué dans l'archive au `npm run dist`.
+
+```bash
+npm run brief:secret     # la première fois : fabrique un secret neuf
+```
+
+Aucun des deux, et l'application le **dit** (code `secret`, « cette copie n'a pas
+de secret de signature ») au lieu de rejeter tous les briefs comme falsifiés —
+deux diagnostics qui n'ont rien à voir.
+
+> **À sauvegarder hors du dépôt.** Ce secret est la seule chose qui relie
+> l'application au serveur. Le perdre oblige à en regénérer un *et* à remettre la
+> clé dérivée dans `config.local.php` du site.
+
+**Limite assumée** : le secret voyage dans le binaire, parce que l'application
+doit pouvoir vérifier seule. Cela empêche un serveur détourné (fichier `hosts`,
+proxy, point d'accès public) d'annoncer d'autres zones actives ; cela ne protège
+pas de quelqu'un qui déballerait l'archive `asar`. C'est la même doctrine que
+`data-crypto.js` dans Tours — à ceci près qu'ici le secret ne se lit pas sur
+GitHub.
 
 ---
 
@@ -210,6 +234,7 @@ publié » ne se corrigent pas de la même manière.
 | Code | Cause | Message affiché |
 |---|---|---|
 | `nokey` | aucune clé enregistrée dans l'application | « Aucune clé CAVVA enregistrée » + bouton vers la saisie |
+| `secret` | dépôt cloné sans `brief-secret.js` ni `CAP_CAVVA_BRIEF_SECRET` | « Cette copie de l'application n'a pas de secret de signature » |
 | `unauthorized` | `401` / `403` | « Clé CAVVA refusée par le serveur. » + bouton vers la saisie |
 | `absent` | `404` | « Aucune séance publiée pour le moment. » |
 | `network` | injoignable, délai dépassé, autre code HTTP | « Serveur CAVVA injoignable. » |

@@ -4,6 +4,11 @@ node_modules/
 # Configuration locale : contient la clé CAVVA → JAMAIS committée
 config.json
 
+# Secret dont dérive la signature des briefs. Écrit par
+# outils/injecter-secret.js, embarqué à l'empaquetage, JAMAIS versionné : ce
+# dépôt est public, et un secret versionné n'est plus un secret.
+src/main/brief-secret.js
+
 # Build / distribution
 dist/
 out/

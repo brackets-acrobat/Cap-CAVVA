@@ -149,19 +149,26 @@ function cadrerSurBrief(pointsTrace) {
 // Rendu : la liste des séances
 // ------------------------------------------------------------
 
+// La liste des séances, avec le détail de la séance choisie DÉPLIÉ JUSTE EN
+// DESSOUS d'elle. Le détail en tête de panneau obligeait à remonter toute la
+// liste après avoir cliqué une date lointaine — sur quarante-deux séances, c'est
+// un aller-retour à chaque coup d'œil.
 function rendreListeBriefs() {
   const jour = aujourdhuiIso();
   return `<div class="brief-liste">` + _briefs.map((b, i) => {
     const passe = b.date < jour;
     const choisi = (b === _briefChoisi);
-    return `<button type="button" class="brief-carte${choisi ? ' est-choisie' : ''}${passe ? ' est-passee' : ''}" data-i="${i}">
-      <span class="brief-carte-date">${escapeHtml(dateLongue(b.date))}</span>
-      <span class="brief-carte-infos">
-        <span class="brief-etiquette">${escapeHtml(b.typeVol || '—')}</span>
-        <span>→ <strong>${escapeHtml(b.icaoArrivee || '—')}</strong></span>
-        <span>${b.rayonNm != null ? b.rayonNm + ' NM' : '—'}</span>
-      </span>
-    </button>`;
+    return `<div class="brief-entree">
+      <button type="button" class="brief-carte${choisi ? ' est-choisie' : ''}${passe ? ' est-passee' : ''}" data-i="${i}">
+        <span class="brief-carte-date">${escapeHtml(dateLongue(b.date))}</span>
+        <span class="brief-carte-infos">
+          <span class="brief-etiquette">${escapeHtml(b.typeVol || '—')}</span>
+          <span>→ <strong>${escapeHtml(b.icaoArrivee || '—')}</strong></span>
+          <span>${b.rayonNm != null ? b.rayonNm + ' NM' : '—'}</span>
+        </span>
+      </button>
+      ${choisi ? `<div class="brief-detail">${rendreDetailBrief()}</div>` : ''}
+    </div>`;
   }).join('') + `</div>`;
 }
 
@@ -234,8 +241,9 @@ function rendreDetailBrief() {
   const b = _briefChoisi;
   if (!b) return '';
 
+  // Pas de titre : le détail est déplié sous la carte de la séance, qui porte
+  // déjà sa date. Le répéter ne ferait qu'éloigner l'information utile.
   const entete = [
-    `<h4 class="brief-titre">${escapeHtml(dateLongue(b.date))}</h4>`,
     ligneInfo(t('briefFlightType'), b.typeVol),
     ligneInfo(t('briefArr'), texteArrivee(b)),
     ligneInfo(t('briefRadius'), b.rayonNm != null ? `${b.rayonNm} NM ${t('briefRadiusAround')}` : ''),
@@ -274,14 +282,20 @@ function rendreBrief() {
     return;
   }
 
-  corps.innerHTML = rendreDetailBrief() + rendreListeBriefs();
+  corps.innerHTML = rendreListeBriefs();
   $('brief-etat').textContent = t('briefCount').replace('{n}', _briefs.length);
+
+  // Après un re-rendu, la séance choisie doit rester sous les yeux : sans cela,
+  // déplier une date lointaine renverrait la liste en haut.
+  const active = corps.querySelector('.brief-carte.est-choisie');
+  if (active) active.scrollIntoView({ block: 'nearest' });
 }
 
 // Le message d'erreur dépend du code : « clé refusée » et « hors ligne » ne se
 // corrigent pas de la même manière, et « rien de publié » n'est pas une panne.
 const BRIEF_MESSAGE = {
   nokey: 'briefErrNoKey',
+  secret: 'briefErrSecret',
   unauthorized: 'briefErrUnauthorized',
   absent: 'briefErrAbsent',
   network: 'briefErrNetwork',

@@ -52,7 +52,12 @@ function setStatus(state, detail) {
 function renderApiHint() {
   if (!lastConfig) return;
   const key = lastConfig.cleConfiguree ? 'apiConfigured' : 'apiMissing';
-  $('api-hint').textContent = t(key).replace('{url}', lastConfig.apiBaseUrl);
+  // `accesHorsLigne` (acces.js) : l'application s'est ouverte sur la foi d'une
+  // validation antérieure, sans avoir pu joindre CAVVA. Ça se dit — sinon le
+  // pilote croit sa clé vérifiée alors qu'elle ne l'a pas été aujourd'hui.
+  const suffixe = (typeof accesHorsLigne !== 'undefined' && accesHorsLigne)
+    ? ' · ' + t('accesOfflineHint') : '';
+  $('api-hint').textContent = t(key).replace('{url}', lastConfig.apiBaseUrl) + suffixe;
 }
 
 function fmt(n, dec = 0) {
