@@ -103,6 +103,13 @@ sim.on('scan', (trame) => diffuser('sc-scan', trame));
 
 // --- Fenêtres ----------------------------------------------------------------
 
+// Icône des fenêtres. Une fois l'application empaquetée, c'est build/icon.ico
+// qui habille l'exe — mais ce dossier est le buildResources d'electron-builder,
+// donc il n'est pas embarqué et rien ne peut le lire à l'exécution. On pointe
+// donc la source, qui, elle, est livrée avec src/. Sans ça, la fenêtre porte
+// l'icône d'Electron en développement.
+const ICONE = path.join(__dirname, '..', 'img', 'icone_cavvappli2.png');
+
 // Splash : fenêtre sans cadre à la taille de l'image, affichée pendant que la
 // fenêtre principale se charge en arrière-plan. La version est injectée par
 // executeJavaScript (pas de script inline : la CSP est stricte).
@@ -119,6 +126,7 @@ function creerSplash() {
     alwaysOnTop: true,
     backgroundColor: FOND,
     title: TITRE,
+    icon: ICONE,
     webPreferences: { contextIsolation: true, nodeIntegration: false },
   });
   splash.removeMenu();
@@ -138,6 +146,7 @@ function creerFenetre() {
     height: 720,
     backgroundColor: FOND,
     title: TITRE,
+    icon: ICONE,
     show: false,   // révélée à la fin du splash (voir whenReady)
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload.js'),
