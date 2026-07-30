@@ -320,9 +320,9 @@ i[class^="ph-"], i[class*=" ph-"] {
 }
 .map-ctx-item:hover { background: var(--panel-2); color: var(--accent); }
 
-/* Message bref sur la carte (attente du SIA, carte VAC absente…).
+/* Message bref sur la carte (attente du SIA ou de la FFPLUM, document absent…).
    pointer-events:none → n'intercepte jamais un clic sur la carte. */
-.vac-toast {
+.doc-toast {
   position: fixed;
   z-index: 1300;
   left: 50%;

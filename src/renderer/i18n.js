@@ -55,6 +55,12 @@ const TRANSLATIONS = {
     vacAbsente: 'Aucune carte VAC publiée au SIA pour {code}.',
     vacNonEligible: '{code} n\'est pas un aérodrome publié au SIA.',
     vacReseau: 'Carte VAC {code} : le SIA est injoignable.',
+    ctxFicheUlm: 'Fiche terrain (FFPLUM)',
+    ficheRecherche: 'Fiche terrain {code} : recherche à la FFPLUM…',
+    ficheAbsente: 'Aucune fiche publiée par la FFPLUM pour {code}.',
+    ficheHorsBase: 'Aucun terrain ULM répertorié à cet endroit.',
+    ficheReseau: 'Fiche terrain {code} : la FFPLUM est injoignable.',
+    ficheAutreCode: 'Fiche ouverte sous le code FFPLUM {code} — {nom}.',
     rangeTitle: 'Cercle de portée',
     rangeLabel: 'Rayon (NM)',
     rangeDraw: 'Tracer',
@@ -264,6 +270,7 @@ const TRANSLATIONS = {
     aboutSource: 'Le code source de cette application est disponible sur <a href="https://github.com/brackets-acrobat/cap-cavva" target="_blank" rel="noopener">GitHub</a>.',
     aboutCopyright: 'Copyright 2026 Cyril MILANI.',
     aboutCreditsMethod: 'L\'extraction des navaids depuis MSFS 2024 (<code>extract-navaids-msfs.js</code>) s\'inspire directement de la méthode du projet atools / Little Navmap d\'Alexander Barthel.',
+    aboutCreditsDocs: 'Les cartes VAC proviennent du <a href="https://www.sia.aviation-civile.gouv.fr/" target="_blank" rel="noopener">Service de l\'information aéronautique</a>. Les fiches des terrains ULM proviennent de la base BASULM de la <a href="https://basulm.ffplum.fr/" target="_blank" rel="noopener">Fédération française d\'ULM</a>, en libre utilisation sous réserve d\'en citer la source.',
   },
 
   en: {
@@ -307,6 +314,12 @@ const TRANSLATIONS = {
     vacAbsente: 'No VAC chart published by the SIA for {code}.',
     vacNonEligible: '{code} is not an aerodrome published by the SIA.',
     vacReseau: 'VAC chart {code}: the SIA is unreachable.',
+    ctxFicheUlm: 'Airfield sheet (FFPLUM)',
+    ficheRecherche: 'Airfield sheet {code}: looking it up at the FFPLUM…',
+    ficheAbsente: 'No sheet published by the FFPLUM for {code}.',
+    ficheHorsBase: 'No microlight airfield listed at this location.',
+    ficheReseau: 'Airfield sheet {code}: the FFPLUM is unreachable.',
+    ficheAutreCode: 'Sheet opened under FFPLUM code {code} — {nom}.',
     rangeTitle: 'Range ring',
     rangeLabel: 'Radius (NM)',
     rangeDraw: 'Draw',
@@ -516,6 +529,7 @@ const TRANSLATIONS = {
     aboutSource: 'The source code of this application is available on <a href="https://github.com/brackets-acrobat/cap-cavva" target="_blank" rel="noopener">GitHub</a>.',
     aboutCopyright: 'Copyright 2026 Cyril MILANI.',
     aboutCreditsMethod: 'The navaid extraction from MSFS 2024 (<code>extract-navaids-msfs.js</code>) draws directly on the method of Alexander Barthel\'s atools / Little Navmap project.',
+    aboutCreditsDocs: 'VAC charts come from the <a href="https://www.sia.aviation-civile.gouv.fr/" target="_blank" rel="noopener">Service de l\'information aéronautique</a>. Microlight airfield sheets come from the BASULM database of the <a href="https://basulm.ffplum.fr/" target="_blank" rel="noopener">Fédération française d\'ULM</a>, freely reusable provided the source is credited.',
   },
 };
 

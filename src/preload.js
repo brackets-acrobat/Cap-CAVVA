@@ -65,6 +65,7 @@ contextBridge.exposeInMainWorld('cap', {
   aeroportParCode: (code) => ipcRenderer.invoke('aeroport-par-code', code),
   featureProche: (lat, lon, rayonNm) => ipcRenderer.invoke('feature-proche', { lat, lon, rayonNm }),
   ouvrirVac: (code) => ipcRenderer.invoke('ouvrir-vac', code),
+  ouvrirFicheUlm: (lat, lon) => ipcRenderer.invoke('ouvrir-fiche-ulm', { lat, lon }),
 
   // Navigation
   declinaison: (lat, lon) => ipcRenderer.invoke('declinaison', { lat, lon }),

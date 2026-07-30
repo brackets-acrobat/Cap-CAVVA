@@ -40,6 +40,7 @@ const acces = require('./acces');
 const elevation = require('./elevation');
 const declinaison = require('./declinaison');
 const vacSia = require('./vac-sia');
+const ficheUlm = require('./fiche-ulm');
 const planIo = require('./plan-io');
 const { setupAutoUpdater, quitAndInstall } = require('./updater');
 
@@ -244,12 +245,20 @@ ipcMain.handle('importer-elevation', async (e) =>
 ipcMain.handle('profil-vertical', async (_e, charge) => elevation.profil(charge));
 
 // Données carte
-ipcMain.handle('aeroports-bbox', async (_e, bbox) => airportsData.aeroportsDansBbox(bbox));
+// Chaque aéroport porte, s'il y en a une, le code BASULM de la fiche ULM
+// correspondante : le menu contextuel se construit sans attendre le réseau, et
+// n'affiche l'entrée que là où une fiche existe vraiment.
+ipcMain.handle('aeroports-bbox', async (_e, bbox) => {
+  const res = airportsData.aeroportsDansBbox(bbox);
+  if (!res.ok) return res;
+  return { ...res, airports: res.airports.map((a) => ({ ...a, ficheUlm: ficheUlm.codePour(a.lat, a.lon) })) };
+});
 ipcMain.handle('navaids-bbox', async (_e, bbox) => airportsData.navaidsDansBbox(bbox));
 ipcMain.handle('aeroport-par-code', async (_e, code) => airportsData.aeroportParCode(code));
 ipcMain.handle('feature-proche', async (_e, { lat, lon, rayonNm } = {}) =>
   airportsData.featureProche(lat, lon, rayonNm));
 ipcMain.handle('ouvrir-vac', async (_e, code) => vacSia.ouvrirVac(code));
+ipcMain.handle('ouvrir-fiche-ulm', async (_e, { lat, lon } = {}) => ficheUlm.ouvrirFiche(lat, lon));
 
 // Navigation
 ipcMain.handle('declinaison', async (_e, { lat, lon } = {}) => declinaison.en(lat, lon));

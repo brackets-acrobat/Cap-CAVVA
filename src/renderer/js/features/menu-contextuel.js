@@ -80,6 +80,9 @@ function ouvrirMenuAeroport(airport, e) {
   if (k >= 0) items.push({ label: t('ctxDeleteWp'), action: () => supprimerPointTournant(k) });
   // Carte VAC du SIA : seulement sur un code OACI métropolitain régulier.
   if (vacEligible(code)) items.push({ label: t('ctxVac'), action: () => ouvrirCarteVac(code) });
+  // Fiche terrain FFPLUM : seulement si le rapprochement par coordonnées, fait
+  // côté principal, a trouvé un terrain BASULM à moins de 500 m.
+  if (airport.ficheUlm) items.push({ label: t('ctxFicheUlm'), action: () => ouvrirFicheTerrain(airport) });
   // Cercle de portée centré sur l'aéroport (rayon saisi dans la modale).
   items.push({ label: t('ctxRangeCircle'), action: () => ouvrirModaleCercle(L.latLng(airport.lat, airport.lon)) });
   if (aDesCercles()) items.push({ label: t('ctxRangeClear'), action: effacerCercles });
