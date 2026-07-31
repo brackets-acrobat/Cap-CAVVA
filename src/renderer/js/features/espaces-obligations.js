@@ -130,7 +130,14 @@ function obligationsZone(p) {
   if (p.type === 'R') out.push({ t: 'AUTORISATION', d: 'Zone réglementée : pénétration soumise à autorisation.' });
   if (p.type === 'D') out.push({ t: 'DANGER', d: 'Zone dangereuse : traversée déconseillée.' });
 
-  if (p.classe && CLASSE_CONTROLEE.has(p.classe)) {
+  // La classe A se traite AVANT les autres classes contrôlées, et à part : le
+  // VFR n'y est pas soumis à clairance, il y est interdit. Annoncer « clairance
+  // obligatoire » laisserait croire qu'il suffit de demander pour passer — la
+  // seule erreur de ce fichier qui pousse dans le mauvais sens. Cap CAVVA est
+  // un outil de vol à vue : 13 zones sont concernées dans l'export français.
+  if (p.classe === 'A') {
+    out.push({ t: 'VFR INTERDIT', d: 'Classe A : VFR interdit, aucune clairance ne l\'autorise.' });
+  } else if (p.classe && CLASSE_CONTROLEE.has(p.classe)) {
     out.push({ t: 'CLAIRANCE', d: `Classe ${p.classe} : clairance obligatoire avant pénétration.` });
   } else if (p.classe === 'E') {
     out.push({ t: 'RADIO', d: 'Classe E : contact radio recommandé.' });
@@ -157,7 +164,7 @@ function obligationsZone(p) {
 
 // Une obligation bloquante mérite du rouge, une information du bleu.
 function tonObligation(t) {
-  if (t === 'INTERDIT' || t === 'AUTORISATION' || t === 'DANGER' || t === 'CLAIRANCE') return 'dur';
+  if (t === 'INTERDIT' || t === 'VFR INTERDIT' || t === 'AUTORISATION' || t === 'DANGER' || t === 'CLAIRANCE') return 'dur';
   if (t === 'H24' || t === 'HJ' || t === 'HN' || t === 'HO' || t === 'HX' || t === 'NOTAM') return 'horaire';
   return 'info';
 }
