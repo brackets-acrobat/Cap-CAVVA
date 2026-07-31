@@ -46,6 +46,20 @@ const BASE_LAYERS = {
 
 // Couches de données MSFS (aéroports / héliports / hydrobases / navaids).
 let airportsLayer = null, heliportsLayer = null, seaplanesLayer = null, navaidsLayer = null;
+
+// Y a-t-il un mode qui attend un clic sur la carte pour désigner un point ?
+// (mesure en cours de traçage, flanquement en attente de sa cible)
+//
+// Ces modes s'approprient le clic gauche. Sans cette question, tout ce qui
+// intercepte le clic — le tracé de route, ses points tournants, les marqueurs
+// d'aéroport, la sonde des espaces — répondrait AUSSI au geste : cliquer le
+// tracé pour poser une cible y insérait un point tournant, et le clic n'arrivait
+// jamais jusqu'à la carte. Chaque intercepteur pose donc cette question d'abord.
+function saisiePointEnCours() {
+  if (typeof mesureEnCours === 'function' && mesureEnCours()) return true;
+  if (typeof flanquementAttendPoint === 'function' && flanquementAttendPoint()) return true;
+  return false;
+}
 let _couchesTimer = null, _airReqId = 0, _navReqId = 0;
 const ZOOM_MIN_COUCHES = 8;
 const TAILLES_AEROPORT = { large_airport: 9, medium_airport: 7, small_airport: 5, heliport: 6, seaplane_base: 6 };

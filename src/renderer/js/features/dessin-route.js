@@ -68,6 +68,9 @@ function dessinerRoute(opts) {
     seg.on('mouseout', () => { if (!_routeDragging) { seg.setStyle({ weight: 3 }); map.getContainer().style.cursor = ''; } });
     seg.on('mousedown', (e) => {
       if (e.originalEvent && e.originalEvent.button !== 0) return;   // clic gauche seulement
+      // Une mesure ou un flanquement attend ce clic : on laisse passer, sinon le
+      // geste insérerait un point tournant au lieu de désigner la cible.
+      if (saisiePointEnCours()) return;
       L.DomEvent.stopPropagation(e);
       L.DomEvent.preventDefault(e);
       // Le point est inséré à segIndex ; il occupe l'index segIndex+1 dans la suite.
@@ -101,6 +104,7 @@ function dessinerRoute(opts) {
     m.on('mouseout', () => { if (!_routeDragging) map.getContainer().style.cursor = ''; });
     m.on('mousedown', (e) => {
       if (e.originalEvent && e.originalEvent.button !== 0) return;   // clic gauche → déplacement
+      if (saisiePointEnCours()) return;   // le clic est destiné à une mesure / un flanquement
       L.DomEvent.stopPropagation(e);
       L.DomEvent.preventDefault(e);
       demarrerDeplacementPoint(idx);

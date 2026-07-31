@@ -322,6 +322,22 @@
     </div>
   </div>
 
+  <!-- Modale : choix de la cible d'un flanquement VOR -->
+  <div id="flanq-overlay" class="overlay" hidden>
+    <div class="modal">
+      <h3><i class="ph-light ph-radio"></i> <span data-i18n="flanqTitre">Flanquement VOR</span></h3>
+      <p class="modal-text"><span data-i18n="flanqStation">Station</span> : <strong id="flanq-vor">—</strong></p>
+      <label class="field-label" data-i18n="flanqCible">Point de la route à flanquer</label>
+      <div id="flanq-list" class="flanq-list"></div>
+      <p id="flanq-empty" class="modal-text" data-i18n="flanqAucuneCible" hidden>Aucun point de route : renseignez un départ et une arrivée.</p>
+      <p id="flanq-error" class="modal-error"></p>
+      <div class="modal-actions">
+        <button id="btn-flanq-cancel" class="btn"><span data-i18n="btnCancel">Annuler</span></button>
+        <button id="btn-flanq-ok" class="btn btn-accent"><i class="ph-light ph-radio"></i> <span data-i18n="flanqTracer">Tracer</span></button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modale : confirmation « Nouveau plan de vol » (abandon du plan en cours) -->
   <div id="newplan-overlay" class="overlay" hidden>
     <div class="modal">
@@ -409,6 +425,8 @@
   <script src="js/features/brief-zones.js"></script>
   <script src="js/features/brief-seance.js"></script>
   <script src="js/features/alerte-espaces.js"></script>
+  <script src="js/features/mesure-carte.js"></script>
+  <script src="js/features/flanquement.js"></script>
   <script src="js/features/cle-api.js"></script>
   <script src="js/features/apropos.js"></script>
   <script src="js/features/maj.js"></script>

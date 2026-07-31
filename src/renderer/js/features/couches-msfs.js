@@ -154,6 +154,7 @@ async function rafraichirAeroports() {
     // comme les autres (l'icône d'aéroport recouvre sinon le marqueur du point).
     marker.on('mousedown', (ev) => {
       if (ev.originalEvent && ev.originalEvent.button !== 0) return;
+      if (saisiePointEnCours()) return;   // le clic est destiné à une mesure / un flanquement
       const code = (a.code || a.ident || '').toUpperCase();
       const k = routeWaypoints.findIndex((w) => (w.code || '').toUpperCase() === code);
       if (k < 0) return;   // pas un point tournant → comportement normal

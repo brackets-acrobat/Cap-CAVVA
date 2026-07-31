@@ -349,6 +349,9 @@ function appliquerPlancherMax(v) {
 // à rien jusqu'ici ; il sert maintenant à lire l'empilement des espaces.
 function brancherSondeEspaces() {
   map.on('click', (e) => {
+    // Le clic qui ferme une mesure, ou qui désigne la cible d'un flanquement,
+    // ne doit pas poser de sonde par-dessus.
+    if (saisiePointEnCours()) return;
     if (!espacesCharges()) return;
     if (_sondeMarqueur) map.removeLayer(_sondeMarqueur);
     _sondeMarqueur = L.circleMarker(e.latlng, {

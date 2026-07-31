@@ -85,6 +85,10 @@ function ouvrirMenuAeroport(airport, e) {
   if (airport.ficheUlm) items.push({ label: t('ctxFicheUlm'), action: () => ouvrirFicheTerrain(airport) });
   // Cercle de portée centré sur l'aéroport (rayon saisi dans la modale).
   items.push({ label: t('ctxRangeCircle'), action: () => ouvrirModaleCercle(L.latLng(airport.lat, airport.lon)) });
+  // Mesurer depuis un aérodrome est le cas le plus courant : on l'offre ici
+  // aussi, pas seulement sur le fond de carte.
+  items.push({ label: t('ctxMesure'), action: () => demarrerMesure(L.latLng(airport.lat, airport.lon)) });
+  if (aUneMesure()) items.push({ label: t('ctxMesureEffacer'), action: effacerMesure });
   if (aDesCercles()) items.push({ label: t('ctxRangeClear'), action: effacerCercles });
   ouvrirMenuContextuel(p.x, p.y, items);
 }
@@ -97,7 +101,9 @@ function itemsFondCarte(latlng) {
     { label: t('ctxSetDepPoint'), action: () => { _lieuDepartLatLng = latlng; definirIcao('dep', 'ZZZY'); } },
     { label: t('ctxSetArrPoint'), action: () => { _lieuArriveeLatLng = latlng; definirIcao('arr', 'ZZZZ'); } },
     { label: t('ctxRangeCircle'), action: () => ouvrirModaleCercle(latlng) },
+    { label: t('ctxMesure'), action: () => demarrerMesure(latlng) },
   ];
+  if (aUneMesure()) items.push({ label: t('ctxMesureEffacer'), action: effacerMesure });
   if (aDesCercles()) items.push({ label: t('ctxRangeClear'), action: effacerCercles });
   return items;
 }
@@ -118,6 +124,17 @@ function ouvrirMenuCercle(e, supprimerCeCercle) {
   ouvrirMenuContextuel(p.x, p.y, items);
 }
 
+// Menu sur le trait d'un flanquement : options du fond de carte + suppression
+// de CE flanquement. Même façon que pour un cercle de portée.
+function ouvrirMenuFlanquement(e, supprimerCeFlanquement) {
+  if (e.originalEvent) e.originalEvent.preventDefault();
+  L.DomEvent.stopPropagation(e);
+  const p = ctxPageXY(e);
+  const items = itemsFondCarte(e.latlng);
+  items.push({ label: t('ctxFlanquementDeleteOne'), action: supprimerCeFlanquement });
+  ouvrirMenuContextuel(p.x, p.y, items);
+}
+
 // Menu sur un navaid : arrivée ZZZZ + cercle de portée du navaid (rayon publié).
 function ouvrirMenuNavaid(e, navaid) {
   if (e.originalEvent) e.originalEvent.preventDefault();
@@ -129,6 +146,13 @@ function ouvrirMenuNavaid(e, navaid) {
   if (navaid && Number.isFinite(navaid.rangeNm) && navaid.rangeNm > 0) {
     items.push({ label: t('ctxRangeCircleNavaid'), action: () => tracerCercleNavaid(navaid) });
   }
+  // Flanquement : seules les stations qui émettent des radiaux. Pas de
+  // condition sur la route — un point quelconque de la carte est toujours
+  // flanquable.
+  if (estStationVor(navaid)) {
+    items.push({ label: t('ctxFlanquement'), action: () => ouvrirModaleFlanquement(navaid) });
+  }
+  if (aDesFlanquements()) items.push({ label: t('ctxFlanquementClear'), action: effacerTousFlanquements });
   if (aDesCercles()) items.push({ label: t('ctxRangeClear'), action: effacerCercles });
   ouvrirMenuContextuel(p.x, p.y, items);
 }

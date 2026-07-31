@@ -45,6 +45,9 @@ function construirePlan() {
       lat: p.lat, lon: p.lon, code: p.code || null, nom: noms[i],
       alt: Number.isFinite(p.alt) ? p.alt : null,
     })),
+    // Flanquements VOR : identité de la station et positions seulement. Radial
+    // et distance sont recalculés à la lecture, la déclinaison ayant pu changer.
+    flanquements: flanquementsEnregistrables(),
     cree: new Date().toISOString(),
   };
 }
@@ -99,6 +102,7 @@ function appliquerPlan(plan) {
   _legActif = 0;   // nouveau plan chargé → leg actif = premier
   majBoutonsPlan();
   majLigneRoute({ fit: true });   // re-résout les ICAO, redessine, recalcule la déclinaison, recadre sur le tracé
+  chargerFlanquements(plan.flanquements);   // absent des plans antérieurs : la liste est alors vide
 }
 
 // Nouveau plan : réinitialise tout l'état (ICAO, points de dép./arr. cliqués,
@@ -112,6 +116,7 @@ function reinitialiserPlan() {
   _legAltDep = null;
   _legActif = 0;
   effacerCercles();   // comme NavXpressVFR : « Nouveau plan » efface aussi les cercles
+  effacerTousFlanquements();   // les flanquements visent des points de CETTE route
   majBoutonsPlan();
   majLigneRoute();   // dép./arr. vides → la route est effacée
 }
