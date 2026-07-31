@@ -62,6 +62,7 @@ function viderScan() {
   if (map && planeTrack) { map.removeLayer(planeTrack); planeTrack = null; }
   $('wind-indicator').hidden = true;
   _ventLastUpdate = 0;
+  reinitAlerteEspaces();   // la déconnexion efface l'avertissement et sa mémoire
   suiviPause = false;
   if (_suiviTimer) { clearTimeout(_suiviTimer); _suiviTimer = null; }
   capPrecedent = null;
@@ -76,4 +77,5 @@ function majScan(f) {
   majCarte(f);
   majVent(f);
   majLegActifDepuisAvion(f);   // séquencement du leg actif selon la position avion
+  majAlerteEspaces(f);         // bandeau avant pénétration d'un espace
 }

@@ -565,6 +565,30 @@ main.profil-open .leaflet-control-scale { opacity: 0; visibility: hidden; }
   pointer-events: none;   /* ne bloque pas l'interaction carte */
 }
 .wind-indicator[hidden] { display: none; }   /* hidden l'emporte sur display:flex */
+
+/* Avertissement avant pénétration d'un espace. Sous la ligne du vent pour ne
+   pas la recouvrir. pointer-events:none → ne bloque jamais la carte, même au
+   pire moment. */
+.alerte-espace {
+  position: absolute;
+  top: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1400;
+  max-width: 86%;
+  padding: .55rem 1.1rem;
+  background: #000;
+  border: 3px solid #ef3027;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: .2px;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, .45);
+  pointer-events: none;
+}
+.alerte-espace[hidden] { display: none; }
 .wind-arrow {
   color: #e00 !important;   /* rouge (override de la règle globale ph- verte) */
   font-size: 20px;

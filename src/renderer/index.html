@@ -115,6 +115,8 @@
       <i class="ph-light ph-arrow-fat-up wind-arrow" id="wind-arrow"></i>
       <span class="wind-text" id="wind-text">—</span>
     </div>
+    <!-- Avertissement avant pénétration d'un espace (voir alerte-espaces.js) -->
+    <div id="alerte-espace" class="alerte-espace" role="alert" aria-live="assertive" hidden></div>
     <!-- Sonde des espaces : ce qui se superpose au point cliqué sur la carte -->
     <aside id="esp-sonde" class="esp-sonde" hidden>
       <div class="esp-sonde-head">
@@ -406,6 +408,7 @@
   <script src="js/features/espaces-import.js"></script>
   <script src="js/features/brief-zones.js"></script>
   <script src="js/features/brief-seance.js"></script>
+  <script src="js/features/alerte-espaces.js"></script>
   <script src="js/features/cle-api.js"></script>
   <script src="js/features/apropos.js"></script>
   <script src="js/features/maj.js"></script>
