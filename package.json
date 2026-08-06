@@ -9,6 +9,7 @@
     "start": "electron .",
     "force-electron": "node force-electron.js",
     "basulm:maj": "node outils/maj-basulm.js",
+    "contours:maj": "node outils/maj-contours.js",
     "brief:secret": "node outils/injecter-secret.js --generer",
     "brief:cle": "node outils/cle-signature.js",
     "brief:signer": "node outils/signer-brief.js",

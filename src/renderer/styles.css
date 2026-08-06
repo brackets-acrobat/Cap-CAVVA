@@ -1069,6 +1069,17 @@ main.profil-open .leaflet-control-scale { opacity: 0; visibility: hidden; }
 .esp-hor { margin: 3px 0 0 17px; font-size: 11px; color: var(--muted); line-height: 1.35; }
 .esp-badges { margin: 4px 0 0 17px; }
 .esp-vide { margin: 10px 0; color: var(--muted); font-size: 12px; }
+/* Provenance du tracé. En italique et en retrait : ce n'est pas une donnée de
+   la zone, c'est une réserve sur ce qu'on en montre. */
+.esp-provenance {
+  margin: 4px 0 0 17px;
+  padding-left: 6px;
+  border-left: 2px solid var(--line);
+  font-size: 10.5px;
+  font-style: italic;
+  color: var(--muted);
+  line-height: 1.35;
+}
 
 /* Badges d'obligation : le rouge pour ce qui interdit ou conditionne le vol,
    l'ambre pour un régime horaire, l'ardoise pour une information. */

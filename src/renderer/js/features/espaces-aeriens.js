@@ -127,6 +127,43 @@ function styleZone(p, famille) {
 // on doit continuer à lire « R rouge » tout en voyant qu'elle est active ce soir.
 const HALO_ACTIVE = { renderer: null, interactive: false, color: '#f59e0b', weight: 7, opacity: 0.75, fill: false };
 
+// ------------------------------------------------------------
+// Zones sans étendue connue
+// ------------------------------------------------------------
+
+// Quatre parcs et 178 sites à survol réglementé (centrales, sites industriels,
+// établissements pénitentiaires) n'ont qu'un repère dans l'export du SIA, et
+// aucun contour public ne leur correspond. On pose un repère plutôt que rien :
+// le pilote doit savoir qu'une règle existe là. La forme dit qu'on ne connaît
+// pas l'étendue — un disque creux, jamais une surface remplie, pour qu'aucune
+// limite ne puisse s'y lire.
+const RAYON_PONCTUEL = 5;
+
+function marqueurPonctuel(famille, actif) {
+  return {
+    renderer: _espacesRenderer,
+    interactive: false,
+    radius: RAYON_PONCTUEL,
+    color: actif ? '#f59e0b' : famille.couleur,
+    weight: actif ? 3 : 2,
+    opacity: 1,
+    fillColor: famille.couleur,
+    fillOpacity: 0.25,
+  };
+}
+
+// Options communes à L.geoJSON : sans pointToLayer, Leaflet poserait son épingle
+// bleue par défaut, qui se lirait comme un point tournant du plan.
+function optionsTrace(p, famille, style) {
+  return {
+    style,
+    pointToLayer: (_f, latlng) => L.circleMarker(
+      latlng,
+      marqueurPonctuel(famille, typeof estZoneActive === 'function' && estZoneActive(p)),
+    ),
+  };
+}
+
 function tracerEspaces() {
   if (!espacesLayer) return;
   espacesLayer.clearLayers();
@@ -139,13 +176,15 @@ function tracerEspaces() {
     const p = feature.properties;
     if (!zoneAffichable(p)) continue;
     const famille = familleDeZone(p);
-    // Halo d'abord : ajouté avant la zone, il reste dessous.
-    if (typeof estZoneActive === 'function' && estZoneActive(p)) {
+    // Halo d'abord : ajouté avant la zone, il reste dessous. Un repère ponctuel
+    // porte déjà sa marque d'activité dans sa couleur — pas de halo sous lui.
+    if (!p.ponctuel && typeof estZoneActive === 'function' && estZoneActive(p)) {
       L.geoJSON(feature, { style: { ...HALO_ACTIVE, renderer: _espacesRenderer } }).addTo(espacesLayer);
     }
     // La couche est mémorisée SUR la feature : c'est ce qui permet ensuite de
     // relier une ligne du panneau au polygone correspondant sur la carte.
-    feature.__couche = L.geoJSON(feature, { style: styleZone(p, famille) }).addTo(espacesLayer);
+    feature.__couche = L.geoJSON(feature, optionsTrace(p, famille, styleZone(p, famille)))
+      .addTo(espacesLayer);
     n += 1;
   }
   majBandeauEspaces(n);
@@ -167,7 +206,10 @@ const SURBRILLANCE = { color: '#ffffff', weight: 4, opacity: 1, fillOpacity: 0.4
 function eteindreZone(feature) {
   if (!feature || !feature.__couche) return;
   const p = feature.properties;
-  feature.__couche.setStyle(styleZone(p, familleDeZone(p)));
+  const famille = familleDeZone(p);
+  feature.__couche.setStyle(p.ponctuel
+    ? marqueurPonctuel(famille, typeof estZoneActive === 'function' && estZoneActive(p))
+    : styleZone(p, famille));
 }
 
 function surlignerZone(feature) {
@@ -227,12 +269,27 @@ function pointDansGeometrie(pt, geom) {
   return false;
 }
 
+// Une zone sans étendue ne peut pas « contenir » le clic : on la retient quand
+// le clic tombe sur son repère, à la tolérance du curseur. En pixels et non en
+// milles, parce que c'est la visée qui est en jeu, pas la géographie — le
+// repère reste attrapable quel que soit le zoom.
+const SAISIE_PONCTUELLE_PX = 12;
+
+function repereAuClic(geom, latlng) {
+  if (!geom || geom.type !== 'Point') return false;
+  const a = map.latLngToLayerPoint(latlng);
+  const b = map.latLngToLayerPoint(L.latLng(geom.coordinates[1], geom.coordinates[0]));
+  return a.distanceTo(b) <= SAISIE_PONCTUELLE_PX;
+}
+
 // Toutes les zones affichées contenant ce point, de la plus basse à la plus haute.
 function zonesAuPoint(lat, lon) {
   if (!espacesCharges()) return [];
   const pt = [wrapLon(lon), lat];
+  const latlng = L.latLng(lat, lon);
   return _espacesData.features
-    .filter((f) => zoneAffichable(f.properties) && pointDansGeometrie(pt, f.geometry))
+    .filter((f) => zoneAffichable(f.properties)
+      && (pointDansGeometrie(pt, f.geometry) || repereAuClic(f.geometry, latlng)))
     .sort((a, b) => plancherApproxFt(a.properties) - plancherApproxFt(b.properties));
 }
 
@@ -253,6 +310,20 @@ function contexteAltitude() {
   const a = champ ? parseFloat(champ.value) : NaN;
   if (!Number.isFinite(a)) return null;
   return { amslFt: a, aglFt: a, stdFt: a, reel: false };
+}
+
+// D'où vient ce qui est tracé. Une zone dont le contour ne vient pas du SIA, et
+// une zone dont on ne connaît pas l'étendue, doivent le dire ici : c'est la
+// seule ligne du panneau où le pilote peut apprendre qu'il ne lit pas une
+// limite d'espace aérien publiée.
+function provenanceZone(p) {
+  if (p.contour) {
+    return `<div class="esp-provenance">${escapeHtml(t('espContour').replace('{nom}', p.contour.nom))}</div>`;
+  }
+  if (p.ponctuel) {
+    return `<div class="esp-provenance">${escapeHtml(t('espPonctuel'))}</div>`;
+  }
+  return '';
 }
 
 function sonderEspaces(latlng) {
@@ -290,6 +361,7 @@ function sonderEspaces(latlng) {
       <div class="esp-meta">${limiteTexte(p.plancher, p.plancherRef)} → ${limiteTexte(p.plafond, p.plafondRef)}</div>
       ${badges ? `<div class="esp-badges">${badges}</div>` : ''}
       ${p.horTxt ? `<div class="esp-hor">${escapeHtml(p.horTxt.replace(/#/g, ' · '))}</div>` : ''}
+      ${provenanceZone(p)}
     </div>`;
   }).join('');
 

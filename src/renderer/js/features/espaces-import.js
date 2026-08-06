@@ -91,11 +91,16 @@ function resumeEspaces(meta) {
   el.hidden = false;
   const types = ['R', 'P', 'D', 'CTR', 'TMA', 'SIV']
     .map((k) => `${k} ${meta.parType[k] || 0}`).join(' · ');
+  const c = meta.contours || {};
   el.innerHTML = escapeHtml(t('espImportDone')
       .replace('{n}', meta.zones)
       .replace('{date}', meta.effDate || '?'))
     + `<br><small>${escapeHtml(types)}</small>`
-    + `<br><small>${escapeHtml(t('espImportSkipped').replace('{n}', meta.ecartees.ponctuelles))}</small>`;
+    + `<br><small>${escapeHtml(t('espImportSkipped').replace('{n}', meta.ecartees.ponctuelles))}</small>`
+    + (c.trouves
+      ? `<br><small>${escapeHtml(t('espImportContours')
+        .replace('{n}', c.trouves).replace('{k}', c.ponctuelles || 0))}</small>`
+      : '');
 }
 
 async function lancerEspacesImport() {

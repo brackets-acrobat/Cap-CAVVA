@@ -34,6 +34,22 @@
 // On les compte dans les métadonnées et on les écarte — les deviner serait
 // inventer des limites d'espace aérien, ce qui n'est pas acceptable ici.
 //
+// Deux types font exception, parce que leur absence de la carte se remarquait :
+//
+//   PRN  parcs et réserves. Leur contour EXISTE ailleurs, publié par l'IGN, et
+//        contours-proteges.js va l'y chercher par le nom et la position. Ce
+//        n'est pas une limite devinée : c'est le périmètre réel du site que le
+//        SIA désigne. Ce qui ne se rapproche pas reste ponctuel.
+//
+//   SUR  survol réglementé — sites industriels, centrales, établissements
+//        pénitentiaires. Aucun contour public ne leur correspond, et ce sont
+//        de vrais objets ponctuels.
+//
+// Les deux ressortent en Point quand le contour manque : un repère sur la carte
+// dit « il y a une règle ici » sans prétendre en dessiner l'étendue. Rien
+// d'autre ne change de statut — voltige, parachutage et terrains restent
+// écartés.
+//
 // ── Les altitudes ───────────────────────────────────────────────────────────
 // Les limites sont référencées explicitement, et chaque référence correspond à
 // une SimVar que le simulateur fournit telle quelle :
@@ -51,8 +67,14 @@ const path = require('path');
 const sax = require('sax');
 
 const { dossierDonnees } = require('./config');
+const contoursProteges = require('./contours-proteges');
 
 const FICHIER_SORTIE = 'espaces-france.geojson';
+
+// Les seuls types dont une Partie ponctuelle est conservée : les parcs et
+// réserves (PRN), pour lesquels un contour peut être retrouvé, et le survol
+// réglementé (SUR), qui désigne de vrais points.
+const TYPES_PONCTUELS = new Set(['PRN', 'SUR']);
 
 // Métropole + Corse. L'outre-mer est dans le même export, sous d'autres
 // territoires ([SO] Guyane, [FM] Mayotte, [TF] Terres australes…).
@@ -88,6 +110,22 @@ function anneauDepuisGeometrie(texte) {
   const premier = anneau[0], dernier = anneau[anneau.length - 1];
   if (premier[0] !== dernier[0] || premier[1] !== dernier[1]) anneau.push([premier[0], premier[1]]);
   return anneau;
+}
+
+// Le repère d'une Partie ponctuelle, en [lon, lat]. Le SIA l'arrondit souvent à
+// la minute : c'est un repère, pas un centroïde, et sûrement pas un centre de
+// cercle — d'où la tolérance de contours-proteges.js.
+function pointDepuisGeometrie(texte) {
+  if (!texte) return null;
+  for (const ligne of String(texte).split('\n')) {
+    const s = ligne.trim();
+    const virgule = s.indexOf(',');
+    if (virgule < 0) continue;
+    const lat = parseFloat(s.slice(0, virgule));
+    const lon = parseFloat(s.slice(virgule + 1));
+    if (Number.isFinite(lat) && Number.isFinite(lon)) return [lon, lat];
+  }
+  return null;
 }
 
 // ------------------------------------------------------------
@@ -187,10 +225,14 @@ function analyser(cheminXml, onProgress) {
             territoire: courant.territoire || null,
           });
         } else if (genre === 'partie') {
+          const anneau = anneauDepuisGeometrie(courant.Geometrie);
           parties.set(courant.pk, {
             espacePk: courant.espacePk || null,
             nomUsuel: (courant.NomUsuel || '').trim() || null,
-            anneau: anneauDepuisGeometrie(courant.Geometrie),
+            anneau,
+            // Gardé seulement quand il n'y a pas de contour : c'est ce repère
+            // qui permettra de retrouver un parc ou de poser un point.
+            point: anneau ? null : pointDepuisGeometrie(courant.Geometrie),
           });
         } else if (genre === 'volume' && courant.partiePk) {
           volumes.push(courant);
@@ -221,13 +263,45 @@ function analyser(cheminXml, onProgress) {
 // Construction du GeoJSON
 // ------------------------------------------------------------
 
+// Géométrie d'une Partie ponctuelle de type PRN ou SUR, et ce qu'il faut en
+// dire. Le résultat est mémorisé par Partie : un parc porte souvent plusieurs
+// Volumes, et la recherche de contour ne doit se faire qu'une fois.
+function geometriePonctuelle(partie, type, memo) {
+  if (memo.has(partie)) return memo.get(partie);
+
+  const [lon, lat] = partie.point;
+  let res = { geometry: { type: 'Point', coordinates: [lon, lat] }, contour: null };
+
+  if (type === 'PRN') {
+    const trouve = contoursProteges.chercher(partie.nomUsuel, lat, lon);
+    if (trouve) {
+      res = {
+        geometry: trouve.poly.length === 1
+          ? { type: 'Polygon', coordinates: trouve.poly[0] }
+          : { type: 'MultiPolygon', coordinates: trouve.poly },
+        contour: {
+          source: 'IGN BD TOPO',
+          nom: trouve.nomSource,
+          genre: trouve.genre,
+          ecartM: Math.round(trouve.distanceM),
+        },
+      };
+    }
+  }
+
+  memo.set(partie, res);
+  return res;
+}
+
 function construire({ situation, espaces, parties, volumes }) {
   const features = [];
   const parType = {};
   let ponctuelles = 0, horsMetropole = 0, orphelines = 0;
+  let contoursTrouves = 0, restesPonctuelles = 0;
 
   // Les Parties écartées sont comptées une seule fois, pas une fois par Volume.
   const partiesVues = new Set();
+  const memoContour = new Map();
 
   for (const v of volumes) {
     const partie = parties.get(v.partiePk);
@@ -239,14 +313,29 @@ function construire({ situation, espaces, parties, volumes }) {
     partiesVues.add(v.partiePk);
 
     if (espace.territoire !== TERRITOIRE_METROPOLE) { if (nouvelle) horsMetropole += 1; continue; }
-    if (!partie.anneau) { if (nouvelle) ponctuelles += 1; continue; }
 
     const type = espace.type || 'other';
+
+    let geometry = null, contour = null;
+    if (partie.anneau) {
+      geometry = { type: 'Polygon', coordinates: [partie.anneau] };
+    } else if (TYPES_PONCTUELS.has(type) && partie.point) {
+      const g = geometriePonctuelle(partie, type, memoContour);
+      geometry = g.geometry;
+      contour = g.contour;
+      if (nouvelle) {
+        if (contour) contoursTrouves += 1; else restesPonctuelles += 1;
+      }
+    } else {
+      if (nouvelle) ponctuelles += 1;
+      continue;
+    }
+
     parType[type] = (parType[type] || 0) + 1;
 
     features.push({
       type: 'Feature',
-      geometry: { type: 'Polygon', coordinates: [partie.anneau] },
+      geometry,
       properties: {
         // Clé stable, contrat avec CAVVA pour désigner une zone active.
         cle: type + '|' + (espace.nom || ''),
@@ -263,6 +352,10 @@ function construire({ situation, espaces, parties, volumes }) {
         activite: v.Activite || null,
         remarque: v.Remarque || null,
         rtba: v.Rtba != null,
+        // Le contour ne vient pas du SIA : la carte doit pouvoir le dire.
+        contour,
+        // Aucune étendue connue — la carte pose un repère, pas une surface.
+        ponctuel: geometry.type === 'Point' || undefined,
       },
     });
   }
@@ -281,6 +374,13 @@ function construire({ situation, espaces, parties, volumes }) {
       zones: features.length,
       parType,
       ecartees: { ponctuelles, horsMetropole, orphelines },
+      // Ce que les parcs et le survol réglementé ont donné, et d'où viennent
+      // les contours ajoutés : le bandeau de la carte doit pouvoir le citer.
+      contours: {
+        trouves: contoursTrouves,
+        ponctuelles: restesPonctuelles,
+        bibliotheque: contoursProteges.etat().meta || null,
+      },
     },
     features,
   };

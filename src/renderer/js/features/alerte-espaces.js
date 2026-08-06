@@ -231,6 +231,10 @@ function majAlerteEspaces(f) {
     const p = feature.properties;
     const g = alerteGravite(p);
     if (!g) continue;
+    // Une zone sans étendue connue n'a pas de limite à franchir : annoncer une
+    // pénétration demanderait de lui inventer un rayon. Elle reste visible sur
+    // la carte et dans la sonde, mais ne déclenche rien.
+    if (p.ponctuel) continue;
     const c = alerteCadre(feature);
     if (f.lat < c.s - dLat || f.lat > c.n + dLat) continue;
     if (f.lon < c.o - dLon || f.lon > c.e + dLon) continue;
