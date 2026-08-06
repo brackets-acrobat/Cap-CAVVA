@@ -1,6 +1,6 @@
 {
   "name": "cap-cavva",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Cap CAVVA — poste de l'organisateur et brief exécutable du vol de club du mercredi soir (MSFS 2024, SimConnect, espaces aériens SIA)",
   "main": "src/main/main.js",
   "author": "Cyril MILANI",
