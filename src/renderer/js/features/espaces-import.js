@@ -100,6 +100,9 @@ function resumeEspaces(meta) {
     + (c.trouves
       ? `<br><small>${escapeHtml(t('espImportContours')
         .replace('{n}', c.trouves).replace('{k}', c.ponctuelles || 0))}</small>`
+      : '')
+    + (meta.pointsVfr
+      ? `<br><small>${escapeHtml(t('espImportVfr').replace('{n}', meta.pointsVfr))}</small>`
       : '');
 }
 
@@ -115,6 +118,9 @@ async function lancerEspacesImport() {
     if (res && res.ok) {
       resumeEspaces(res.meta);
       await chargerEspaces();   // recharge la couche avec le cycle fraîchement converti
+      // Les repères VFR viennent du même export : leur cache est périmé lui aussi.
+      oublierPointsVfr();
+      rafraichirPointsVfr();
     } else {
       const el = $('esp-progress-summary');
       el.className = 'modal-status is-error';

@@ -40,6 +40,7 @@ contextBridge.exposeInMainWorld('cap', {
   // Espaces aériens français (export du SIA)
   siaEtat: () => ipcRenderer.invoke('sia-etat'),
   siaEspaces: () => ipcRenderer.invoke('sia-espaces'),
+  siaPointsVfr: () => ipcRenderer.invoke('sia-points-vfr'),
   siaOuvrirDossier: () => ipcRenderer.invoke('sia-ouvrir-dossier'),
   siaChoisirFichier: () => ipcRenderer.invoke('sia-choisir-fichier'),
   siaImporter: (chemin) => ipcRenderer.invoke('sia-importer', chemin),

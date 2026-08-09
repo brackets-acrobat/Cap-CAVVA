@@ -69,6 +69,7 @@ const layerState = {
   heliports: localStorage.getItem('cap-layer-heliports') === '1',
   seaplanes: localStorage.getItem('cap-layer-seaplanes') === '1',
   navaids:   localStorage.getItem('cap-layer-navaids')   === '1',
+  pointsVfr: localStorage.getItem('cap-layer-pointsVfr') === '1',
 };
 
 // Icône avion (vue de dessus, pointe vers le nord à 0°). Une <img> dans un
@@ -130,6 +131,7 @@ function initMap() {
   heliportsLayer = L.layerGroup().addTo(map);
   seaplanesLayer = L.layerGroup().addTo(map);
   navaidsLayer   = L.layerGroup().addTo(map);
+  pointsVfrLayer = L.layerGroup().addTo(map);   // repères de report VFR (SIA)
   _rangeLayer    = L.layerGroup().addTo(map);   // cercles de portée (magenta)
   _briefLayer    = L.layerGroup().addTo(map);   // rayon de départ et repères du brief (ambre)
   routeLayer     = L.layerGroup().addTo(map);   // ligne de route départ → arrivée

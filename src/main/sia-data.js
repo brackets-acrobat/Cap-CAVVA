@@ -20,9 +20,10 @@
 
 const fs = require('fs');
 
-const { cheminSortie } = require('./sia-convert');
+const { cheminSortie, cheminPointsVfr } = require('./sia-convert');
 
 let _cache = null;   // { meta, features } | null si absent
+let _cacheVfr = null;
 
 function charger() {
   if (_cache) return _cache;
@@ -34,7 +35,19 @@ function charger() {
   return _cache;
 }
 
-function reload() { _cache = null; return charger(); }
+// Les points de report VFR, dans leur propre fichier. Un export converti avant
+// que cette fonctionnalité existe n'en a pas : absence légitime, pas une erreur.
+function chargerPointsVfr() {
+  if (_cacheVfr) return _cacheVfr;
+  try {
+    _cacheVfr = JSON.parse(fs.readFileSync(cheminPointsVfr(), 'utf-8'));
+  } catch (_) {
+    _cacheVfr = null;
+  }
+  return _cacheVfr;
+}
+
+function reload() { _cache = null; _cacheVfr = null; return charger(); }
 
 // Y a-t-il des espaces disponibles, et de quel cycle ?
 function etat() {
@@ -49,4 +62,12 @@ function espaces() {
   return g && Array.isArray(g.features) ? g : null;
 }
 
-module.exports = { espaces, etat, reload };
+// Les points de report VFR (~1 100 repères, 200 Ko) : envoyés en une fois comme
+// les espaces. Le filtrage par cadre se fait côté carte, à chaque déplacement —
+// un aller-retour IPC par mouvement de souris coûterait plus que la collection.
+function pointsVfr() {
+  const g = chargerPointsVfr();
+  return g && Array.isArray(g.features) ? g : null;
+}
+
+module.exports = { espaces, pointsVfr, etat, reload };

@@ -748,8 +748,27 @@ main.profil-open .leaflet-control-scale { opacity: 0; visibility: hidden; }
   padding: 4px 7px;
   box-shadow: 0 2px 10px rgba(15, 23, 42, .18);
 }
+/* Points de report VFR : même infobulle, liseré noir — la couleur du repère sur
+   la carte, pour qu'on relie l'un à l'autre sans réfléchir. */
+.leaflet-tooltip.vfr-tooltip {
+  background: #ffffff;
+  border: 1px solid #000000;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.35;
+  padding: 4px 7px;
+  max-width: 240px;
+  white-space: normal;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, .18);
+}
 .leaflet-tooltip.airport-tooltip::before,
-.leaflet-tooltip.navaid-tooltip::before { display: none; }   /* pas de flèche */
+.leaflet-tooltip.navaid-tooltip::before,
+.leaflet-tooltip.vfr-tooltip::before { display: none; }   /* pas de flèche */
+.vfr-tt-ident { font-weight: 700; color: #000000; }
+.vfr-tt-desc { margin-top: 2px; }
+/* Relèvement et distance depuis un moyen radio, quand le SIA les donne. */
+.vfr-tt-situation { margin-top: 2px; color: var(--muted); }
 
 /* Labels permanents des points tournants : nom rouge, contour blanc 1 px,
    posés à côté du point (voir dessinerLabelsPoints, masqués si ça chevauche). */

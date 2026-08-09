@@ -16,6 +16,8 @@ out/
 # Exports SIA téléchargés pour le développement : volumineux, et l'utilisateur
 # final télécharge les siens sur le site du SIA (rien n'est redistribué).
 donnees-sia/
+# Même chose quand ils sont déposés à côté des outils, pour inspection.
+outils/*.xml
 
 # Signature du brief d'exemple : régénérée par `npm run brief:signer`, elle
 # changerait à chaque retouche du fichier signé.

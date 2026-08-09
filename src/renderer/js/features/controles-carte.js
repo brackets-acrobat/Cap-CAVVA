@@ -26,6 +26,11 @@ function ajouterControlesCarte() {
           `<label><input type="checkbox" data-layer="heliports"> <span data-i18n="layerHeliports">${t('layerHeliports')}</span></label>` +
           `<label><input type="checkbox" data-layer="seaplanes"> <span data-i18n="layerSeaplanes">${t('layerSeaplanes')}</span></label>` +
           `<label><input type="checkbox" data-layer="navaids"> <span data-i18n="layerNavaids">${t('layerNavaids')}</span></label>` +
+          // Séparé des quatre précédentes : celles-là viennent de MSFS, celle-ci
+          // de l'export du SIA. Rien ne s'affichera tant qu'il n'a pas été converti.
+          `<hr class="map-dd-sep">` +
+          `<label><input type="checkbox" data-layer="pointsVfr"> <span data-i18n="layerVfrPoints">${t('layerVfrPoints')}</span></label>` +
+          `<p class="map-dd-note" data-i18n="layerZoomNote">${t('layerZoomNote')}</p>` +
         `</div>` +
       `</div>` +
       // Widget 2 — fond de carte (boutons radio)

@@ -227,6 +227,7 @@ ipcMain.handle('extraire-navaids-msfs', async (e) =>
 // Espaces aériens (export du SIA converti en GeoJSON)
 ipcMain.handle('sia-etat', async () => siaImport.etat());
 ipcMain.handle('sia-espaces', async () => siaData.espaces());
+ipcMain.handle('sia-points-vfr', async () => siaData.pointsVfr());
 ipcMain.handle('sia-ouvrir-dossier', async () => siaImport.ouvrirDossier());
 ipcMain.handle('sia-choisir-fichier', async () => siaImport.choisirFichier(fenetre));
 ipcMain.handle('sia-importer', async (e, chemin) =>

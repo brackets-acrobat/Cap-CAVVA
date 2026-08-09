@@ -125,6 +125,9 @@ function planifierRafraichirCouches() {
 function rafraichirCouches() {
   rafraichirAeroports();
   rafraichirNavaids();
+  // Points de report VFR : même seuil de zoom, mais la donnée vient du SIA et
+  // non de MSFS — d'où son fichier à part (points-vfr.js).
+  if (typeof rafraichirPointsVfr === 'function') rafraichirPointsVfr();
 }
 
 async function rafraichirAeroports() {

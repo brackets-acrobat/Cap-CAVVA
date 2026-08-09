@@ -70,6 +70,7 @@ const { dossierDonnees } = require('./config');
 const contoursProteges = require('./contours-proteges');
 
 const FICHIER_SORTIE = 'espaces-france.geojson';
+const FICHIER_POINTS_VFR = 'points-vfr.geojson';
 
 // Les seuls types dont une Partie ponctuelle est conservée : les parcs et
 // réserves (PRN), pour lesquels un contour peut être retrouvé, et le survol
@@ -85,6 +86,7 @@ const TERRITOIRE_METROPOLE = '[LF]';
 const POINTS_MINIMUM = 3;
 
 function cheminSortie() { return path.join(dossierDonnees(), FICHIER_SORTIE); }
+function cheminPointsVfr() { return path.join(dossierDonnees(), FICHIER_POINTS_VFR); }
 
 // ------------------------------------------------------------
 // Lecture des points
@@ -158,8 +160,9 @@ const CHAMPS_VOLUME = new Set([
 ]);
 const CHAMPS_ESPACE = new Set(['TypeEspace', 'Nom']);
 const CHAMPS_PARTIE = new Set(['NomUsuel', 'NomPartie', 'Geometrie']);
+const CHAMPS_NAVFIX = new Set(['NavType', 'Ident', 'Latitude', 'Longitude', 'Description', 'Situation']);
 
-// Lit le XML en flux et renvoie { situation, espaces, parties, volumes }.
+// Lit le XML en flux et renvoie { situation, espaces, parties, volumes, navfix }.
 // Le fichier est en ISO-8859-1 : Buffer.toString('latin1') le décode exactement,
 // et l'encodage étant sur un seul octet, découper en morceaux ne casse aucun
 // caractère.
@@ -171,12 +174,13 @@ function analyser(cheminXml, onProgress) {
     const espaces = new Map();   // pk → { type, nom, territoire }
     const parties = new Map();   // pk → { espacePk, nomUsuel, anneau }
     const volumes = [];          // { partiePk, … }
+    const navfix = [];           // repères de navigation, dont les points VFR
     let situation = {};
 
     const parseur = sax.createStream(true, { trim: false, position: false });
     const pile = [];
-    let courant = null;      // objet Espace / Partie / Volume en cours
-    let genre = null;        // 'espace' | 'partie' | 'volume'
+    let courant = null;      // objet Espace / Partie / Volume / NavFix en cours
+    let genre = null;        // 'espace' | 'partie' | 'volume' | 'navfix'
     let champ = null;        // nom de la balise feuille en cours
     let tampon = '';
 
@@ -193,12 +197,14 @@ function analyser(cheminXml, onProgress) {
         if (section === 'EspaceS' && n.name === 'Espace') { genre = 'espace'; courant = { pk: n.attributes.pk }; }
         else if (section === 'PartieS' && n.name === 'Partie') { genre = 'partie'; courant = { pk: n.attributes.pk }; }
         else if (section === 'VolumeS' && n.name === 'Volume') { genre = 'volume'; courant = {}; }
+        else if (section === 'NavFixS' && n.name === 'NavFix') { genre = 'navfix'; courant = {}; }
         else { genre = null; courant = null; }
         return;
       }
       if (p === 5 && courant) {
         // Les renvois entre niveaux sont des balises vides porteuses d'attributs.
         if (genre === 'espace' && n.name === 'Territoire') courant.territoire = n.attributes.lk;
+        else if (genre === 'navfix' && n.name === 'Territoire') courant.territoire = n.attributes.lk;
         else if (genre === 'partie' && n.name === 'Espace') courant.espacePk = n.attributes.pk;
         else if (genre === 'volume' && n.name === 'Partie') courant.partiePk = n.attributes.pk;
         champ = n.name;
@@ -216,6 +222,7 @@ function analyser(cheminXml, onProgress) {
         if (genre === 'espace' && CHAMPS_ESPACE.has(nom)) courant[nom] = tampon.trim();
         else if (genre === 'partie' && CHAMPS_PARTIE.has(nom)) courant[nom] = tampon;
         else if (genre === 'volume' && CHAMPS_VOLUME.has(nom)) courant[nom] = tampon.trim();
+        else if (genre === 'navfix' && CHAMPS_NAVFIX.has(nom)) courant[nom] = tampon.trim();
         champ = null; tampon = '';
       } else if (p === 4 && courant) {
         if (genre === 'espace') {
@@ -236,6 +243,8 @@ function analyser(cheminXml, onProgress) {
           });
         } else if (genre === 'volume' && courant.partiePk) {
           volumes.push(courant);
+        } else if (genre === 'navfix') {
+          navfix.push(courant);
         }
         courant = null; genre = null;
       }
@@ -243,7 +252,7 @@ function analyser(cheminXml, onProgress) {
     });
 
     parseur.on('error', (e) => { parseur._parser.error = null; reject(e); });
-    parseur.on('end', () => resolve({ situation, espaces, parties, volumes }));
+    parseur.on('end', () => resolve({ situation, espaces, parties, volumes, navfix }));
 
     const flux = fs.createReadStream(cheminXml);
     flux.on('error', reject);
@@ -386,6 +395,72 @@ function construire({ situation, espaces, parties, volumes }) {
   };
 }
 
+// ------------------------------------------------------------
+// Points de report VFR
+// ------------------------------------------------------------
+//
+// Le SIA les publie dans <NavFixS>, mêlés aux VOR, NDB et waypoints de route,
+// distingués par NavType. Ils sortent dans LEUR PROPRE fichier et non parmi les
+// espaces : tout ce qui lit espaces-france.geojson y cherche des volumes —
+// appartenance d'un point, tranches traversées par la route, avertissement de
+// pénétration. Un repère n'a rien à répondre à ces questions.
+//
+// L'Ident porte le préfixe de son aérodrome (« MM-CV » pour Grenoble), et la
+// Description le repère au sol, en français : « Cavaillon (Pont TGV sur la
+// Durance) ». C'est ce texte que le pilote cherche des yeux, pas la position.
+const NAVTYPE_VFR = 'VFR';
+const PREFIXE_VRP = /^VRP\s*-\s*/i;
+
+function construirePointsVfr(navfix, situation) {
+  const features = [];
+  let horsMetropole = 0, sansPosition = 0;
+
+  for (const n of navfix) {
+    if (n.NavType !== NAVTYPE_VFR) continue;
+    if (n.territoire !== TERRITOIRE_METROPOLE) { horsMetropole += 1; continue; }
+
+    const lat = nombre(n.Latitude), lon = nombre(n.Longitude);
+    if (lat == null || lon == null) { sansPosition += 1; continue; }
+
+    const ident = (n.Ident || '').trim();
+    // « VRP- » préfixe toutes les descriptions : il dit ce qu'on sait déjà et
+    // mangerait la largeur de l'infobulle.
+    const description = (n.Description || '').replace(PREFIXE_VRP, '').trim();
+
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [lon, lat] },
+      properties: {
+        ident,
+        // « MM-CV » → « MM », qui désigne l'aérodrome de rattachement. C'est une
+        // convention de nommage du SIA, pas un renvoi : aucun champ ne relie le
+        // point à son terrain. On garde le préfixe tel quel, sans prétendre en
+        // déduire un code OACI.
+        groupe: ident.includes('-') ? ident.slice(0, ident.indexOf('-')) : null,
+        description: description || null,
+        // Relèvement et distance depuis un moyen radio, quand le SIA les donne
+        // (« 245°/4.8 NM CBY ») — présent sur une minorité de points.
+        situation: (n.Situation || '').trim() || null,
+      },
+    });
+  }
+
+  features.sort((a, b) => a.properties.ident.localeCompare(b.properties.ident, 'fr'));
+
+  return {
+    type: 'FeatureCollection',
+    meta: {
+      source: 'SIA — export XML_SIA, Licence Ouverte 2.0',
+      effDate: situation.effDate || null,
+      pubDate: situation.pubDate || null,
+      converti: new Date().toISOString(),
+      points: features.length,
+      ecartes: { horsMetropole, sansPosition },
+    },
+    features,
+  };
+}
+
 // Hauteur approximative du plancher, pour l'ordre de tracé seulement. Les trois
 // références sont ici mélangées volontairement : il ne s'agit que d'empiler des
 // polygones à l'écran, pas de juger si l'avion est dedans.
@@ -396,7 +471,11 @@ function hauteurTri(p) {
 
 // ------------------------------------------------------------
 
-// Convertit `cheminXml` et écrit le GeoJSON dans le dossier de données.
+// Convertit `cheminXml` et écrit les GeoJSON dans le dossier de données.
+//
+// Deux fichiers pour une seule lecture : les espaces d'un côté, les points de
+// report VFR de l'autre. Le XML fait 27 Mo — le relire pour en tirer les
+// repères serait payer deux fois le même parcours.
 async function convertir(cheminXml, onProgress = () => {}) {
   onProgress({ type: 'debut', fichier: path.basename(cheminXml) });
 
@@ -412,8 +491,16 @@ async function convertir(cheminXml, onProgress = () => {}) {
   fs.mkdirSync(path.dirname(sortie), { recursive: true });
   fs.writeFileSync(sortie, JSON.stringify(geojson), 'utf-8');
 
-  onProgress({ type: 'termine', meta: geojson.meta, fichier: sortie });
-  return { ok: true, meta: geojson.meta, fichier: sortie };
+  // Les points VFR ne conditionnent pas la conversion : un export qui n'en
+  // contiendrait pas reste un export valable, et les espaces priment.
+  const vfr = construirePointsVfr(brut.navfix || [], brut.situation || {});
+  fs.writeFileSync(cheminPointsVfr(), JSON.stringify(vfr), 'utf-8');
+
+  const meta = { ...geojson.meta, pointsVfr: vfr.meta.points };
+  onProgress({ type: 'termine', meta, fichier: sortie });
+  return { ok: true, meta, fichier: sortie };
 }
 
-module.exports = { convertir, cheminSortie, FICHIER_SORTIE };
+module.exports = {
+  convertir, cheminSortie, cheminPointsVfr, FICHIER_SORTIE, FICHIER_POINTS_VFR,
+};
