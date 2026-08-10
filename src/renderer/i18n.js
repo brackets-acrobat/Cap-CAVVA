@@ -91,6 +91,7 @@ const TRANSLATIONS = {
     snapText: 'Un {kind} est à {dist} NM : {feature}. Placer le point tournant dessus ?',
     snapAirport: 'aéroport',
     snapNavaid: 'navaid',
+    snapVfr: 'point de report VFR',
     snapKeep: 'Garder la position',
     snapPlace: 'Placer dessus',
 
@@ -207,6 +208,12 @@ const TRANSLATIONS = {
     layerNavaids: 'Navaids',
     layerVfrPoints: 'Points de report VFR',
     layerZoomNote: 'Ces couches apparaissent à partir du zoom 8.',
+    layerPhares: 'Feux aéronautiques',
+    layerObstacles: 'Obstacles',
+    obstMinHeight: 'Hauteur minimale (ft sol)',
+    obstZoomNote: 'Les obstacles apparaissent à partir du zoom 11.',
+    obstHbn: 'Feu de danger (HBN)',
+    obstIbn: 'Feu d\'identification d\'aérodrome (IBN)',
     basemapTitle: 'Fond de carte',
     followTitle: 'Suivre l\'avion',
 
@@ -376,6 +383,7 @@ const TRANSLATIONS = {
     snapText: 'A {kind} is {dist} NM away: {feature}. Snap the turning point onto it?',
     snapAirport: 'airport',
     snapNavaid: 'navaid',
+    snapVfr: 'VFR reporting point',
     snapKeep: 'Keep position',
     snapPlace: 'Snap onto it',
 
@@ -492,6 +500,12 @@ const TRANSLATIONS = {
     layerNavaids: 'Navaids',
     layerVfrPoints: 'VFR reporting points',
     layerZoomNote: 'These layers appear from zoom 8 onwards.',
+    layerPhares: 'Aeronautical lights',
+    layerObstacles: 'Obstacles',
+    obstMinHeight: 'Minimum height (ft AGL)',
+    obstZoomNote: 'Obstacles appear from zoom 11 onwards.',
+    obstHbn: 'Hazard beacon (HBN)',
+    obstIbn: 'Aerodrome identification beacon (IBN)',
     basemapTitle: 'Base map',
     followTitle: 'Follow aircraft',
 

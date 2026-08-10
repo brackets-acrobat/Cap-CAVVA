@@ -228,6 +228,7 @@ ipcMain.handle('extraire-navaids-msfs', async (e) =>
 ipcMain.handle('sia-etat', async () => siaImport.etat());
 ipcMain.handle('sia-espaces', async () => siaData.espaces());
 ipcMain.handle('sia-points-vfr', async () => siaData.pointsVfr());
+ipcMain.handle('sia-obstacles', async () => siaData.obstacles());
 ipcMain.handle('sia-ouvrir-dossier', async () => siaImport.ouvrirDossier());
 ipcMain.handle('sia-choisir-fichier', async () => siaImport.choisirFichier(fenetre));
 ipcMain.handle('sia-importer', async (e, chemin) =>
@@ -265,8 +266,17 @@ ipcMain.handle('aeroports-bbox', async (_e, bbox) => {
 });
 ipcMain.handle('navaids-bbox', async (_e, bbox) => airportsData.navaidsDansBbox(bbox));
 ipcMain.handle('aeroport-par-code', async (_e, code) => airportsData.aeroportParCode(code));
-ipcMain.handle('feature-proche', async (_e, { lat, lon, rayonNm } = {}) =>
-  airportsData.featureProche(lat, lon, rayonNm));
+// Aimantation d'un point tournant : le plus proche entre les bases MSFS
+// (aéroports, navaids) et les points de report VFR du SIA. Deux sources, deux
+// modules — c'est ici qu'on les départage, au plus près.
+ipcMain.handle('feature-proche', async (_e, { lat, lon, rayonNm } = {}) => {
+  const res = airportsData.featureProche(lat, lon, rayonNm);
+  const vfr = siaData.pointVfrProche(lat, lon, rayonNm);
+  if (!vfr) return res;
+  const msfs = res && res.found ? res.feature : null;
+  if (msfs && msfs.distNm <= vfr.distNm) return res;
+  return { ok: true, found: true, feature: vfr };
+});
 ipcMain.handle('ouvrir-vac', async (_e, code) => vacSia.ouvrirVac(code));
 ipcMain.handle('ouvrir-fiche-ulm', async (_e, { lat, lon } = {}) => ficheUlm.ouvrirFiche(lat, lon));
 

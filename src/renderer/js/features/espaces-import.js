@@ -118,9 +118,12 @@ async function lancerEspacesImport() {
     if (res && res.ok) {
       resumeEspaces(res.meta);
       await chargerEspaces();   // recharge la couche avec le cycle fraîchement converti
-      // Les repères VFR viennent du même export : leur cache est périmé lui aussi.
+      // Les repères VFR et les obstacles viennent du même export : leurs caches
+      // sont périmés eux aussi.
       oublierPointsVfr();
       rafraichirPointsVfr();
+      oublierObstacles();
+      rafraichirObstacles();
     } else {
       const el = $('esp-progress-summary');
       el.className = 'modal-status is-error';

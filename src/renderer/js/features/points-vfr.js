@@ -125,6 +125,10 @@ async function rafraichirPointsVfr() {
     marqueur.bindTooltip(infobullePointVfr(f.properties), {
       direction: 'top', offset: [0, -8], className: 'vfr-tooltip', opacity: 1,
     });
+    // Le triangle recouvre le point tournant aimanté sur lui : il lui rend le
+    // clic, sans quoi le point deviendrait impossible à déplacer.
+    brancherReprisePointTournant(marqueur, lat, lon, f.properties.ident);
+    marqueur.on('contextmenu', (ev) => ouvrirMenuPointVfr(ev, f.properties, lat, lon));
     marqueur.addTo(pointsVfrLayer);
   }
 }

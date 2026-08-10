@@ -24,8 +24,13 @@ async function verifierProximitePointTournant(index) {
   if (!best) return;
   _snapIndex = index;
   _snapFeature = best;
-  const kindKey = best.kind === 'airport' ? 'snapAirport' : 'snapNavaid';
-  const label = (best.code && best.code !== best.name) ? `${best.name} (${best.code})` : best.name;
+  const kindKey = best.kind === 'airport' ? 'snapAirport'
+    : best.kind === 'vfr' ? 'snapVfr' : 'snapNavaid';
+  // Le code n'est rappelé entre parenthèses que s'il ne figure pas déjà dans le
+  // nom : un point de report s'annonce « MM-CV — Cavaillon (Pont TGV sur la
+  // Durance) », et y accoler « (MM-CV) » le redirait pour rien.
+  const label = (best.code && !String(best.name).includes(best.code))
+    ? `${best.name} (${best.code})` : best.name;
   const dist = best.distNm < 0.1 ? best.distNm.toFixed(2) : best.distNm.toFixed(1);
   $('snap-text').textContent = t('snapText')
     .replace('{kind}', t(kindKey)).replace('{dist}', dist).replace('{feature}', label);
@@ -93,6 +98,56 @@ function demarrerDeplacementPoint(k) {
       verifierProximitePointTournant(k);   // aimantation aéroport/navaid proche
     }
   );
+}
+
+// ------------------------------------------------------------
+// Rendre le clic au point tournant caché sous un marqueur de couche
+// ------------------------------------------------------------
+//
+// Un point tournant est un L.circleMarker : il vit dans l'overlayPane. Les
+// aéroports, les navaids et les repères VFR sont des L.marker : ils vivent dans
+// le markerPane, que Leaflet place AU-DESSUS (z-index 600 contre 400).
+//
+// Conséquence : dès qu'un point tournant est aimanté sur l'un d'eux, son
+// marqueur passe dessous et ne reçoit plus rien. Le point devient impossible à
+// déplacer — et c'est justement après l'aimantation qu'on veut le corriger.
+//
+// Chaque marqueur de couche rend donc le clic au point tournant qu'il recouvre.
+// Le rapprochement se fait D'ABORD par la position : l'aimantation copie les
+// coordonnées du feature à l'identique, alors que le code peut être absent
+// (extrémité sans ICAO) ou ambigu entre deux bases.
+const REPRISE_EPS_DEG = 5e-5;   // ≈ 5 m : le bruit du flottant, rien de plus
+
+function pointTournantSous(lat, lon, code) {
+  const l = wrapLon(lon);
+  for (let i = 0; i < routeWaypoints.length; i++) {
+    const w = routeWaypoints[i];
+    if (Math.abs(w.lat - lat) < REPRISE_EPS_DEG
+      && Math.abs(wrapLon(w.lon) - l) < REPRISE_EPS_DEG) return i;
+  }
+  const c = String(code || '').toUpperCase();
+  if (!c) return -1;
+  return routeWaypoints.findIndex((w) => String(w.code || '').toUpperCase() === c);
+}
+
+// À poser sur tout marqueur de couche susceptible de recouvrir un point
+// tournant. `lat`/`lon` sont les coordonnées RÉELLES du feature, pas celles
+// décalées pour la copie du monde affichée.
+function brancherReprisePointTournant(marqueur, lat, lon, code) {
+  marqueur.on('mouseover', () => {
+    if (_routeDragging) return;
+    if (pointTournantSous(lat, lon, code) >= 0) map.getContainer().style.cursor = 'grab';
+  });
+  marqueur.on('mouseout', () => { if (!_routeDragging) map.getContainer().style.cursor = ''; });
+  marqueur.on('mousedown', (ev) => {
+    if (ev.originalEvent && ev.originalEvent.button !== 0) return;   // clic gauche seulement
+    if (saisiePointEnCours()) return;   // le clic est destiné à une mesure / un flanquement
+    const k = pointTournantSous(lat, lon, code);
+    if (k < 0) return;   // rien dessous : le marqueur garde son comportement normal
+    L.DomEvent.stopPropagation(ev);
+    L.DomEvent.preventDefault(ev);
+    demarrerDeplacementPoint(k);
+  });
 }
 
 // Supprime le point tournant d'index k.

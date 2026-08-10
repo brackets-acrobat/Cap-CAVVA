@@ -73,10 +73,9 @@ function ouvrirMenuAeroport(airport, e) {
     { label: t('ctxSetDep'), action: () => definirIcao('dep', code) },
     { label: t('ctxSetArr'), action: () => definirIcao('arr', code) },
   ];
-  // Correspondance avec un point tournant aimanté : code brut (même base que le
-  // mousedown de l'aéroport et que le code stocké via featureProche).
-  const rawCode = (airport.code || airport.ident || '').toUpperCase();
-  const k = routeWaypoints.findIndex((w) => (w.code || '').toUpperCase() === rawCode);
+  // Correspondance avec un point tournant aimanté : position d'abord, code en
+  // repli — la même règle que le clic-glisser (cf. pointTournantSous).
+  const k = pointTournantSous(airport.lat, airport.lon, airport.code || airport.ident);
   if (k >= 0) items.push({ label: t('ctxDeleteWp'), action: () => supprimerPointTournant(k) });
   // Carte VAC du SIA : seulement sur un code OACI métropolitain régulier.
   if (vacEligible(code)) items.push({ label: t('ctxVac'), action: () => ouvrirCarteVac(code) });
@@ -143,6 +142,10 @@ function ouvrirMenuNavaid(e, navaid) {
   const items = [
     { label: t('ctxSetArrPoint'), action: () => { _lieuArriveeLatLng = latlng; definirIcao('arr', 'ZZZZ'); } },
   ];
+  // Même règle que sur un aérodrome : si un point tournant est aimanté sur
+  // cette station, son marqueur est caché dessous et c'est ici qu'on le supprime.
+  const kNav = navaid ? pointTournantSous(navaid.lat, navaid.lon, navaid.ident) : -1;
+  if (kNav >= 0) items.push({ label: t('ctxDeleteWp'), action: () => supprimerPointTournant(kNav) });
   if (navaid && Number.isFinite(navaid.rangeNm) && navaid.rangeNm > 0) {
     items.push({ label: t('ctxRangeCircleNavaid'), action: () => tracerCercleNavaid(navaid) });
   }
@@ -154,6 +157,24 @@ function ouvrirMenuNavaid(e, navaid) {
   }
   if (aDesFlanquements()) items.push({ label: t('ctxFlanquementClear'), action: effacerTousFlanquements });
   if (aDesCercles()) items.push({ label: t('ctxRangeClear'), action: effacerCercles });
+  ouvrirMenuContextuel(p.x, p.y, items);
+}
+
+// Menu pour un point de report VFR. Même ossature que celui d'un navaid : un
+// repère de report est un point d'arrivée légitime, et s'il porte un point
+// tournant aimanté, son triangle le recouvre — c'est donc ici qu'on le
+// supprime, comme sur un aérodrome ou une station.
+function ouvrirMenuPointVfr(e, props, lat, lon) {
+  if (e.originalEvent) e.originalEvent.preventDefault();
+  const p = ctxPageXY(e);
+  const latlng = e.latlng;
+  const items = [
+    { label: t('ctxSetArrPoint'), action: () => { _lieuArriveeLatLng = latlng; definirIcao('arr', 'ZZZZ'); } },
+  ];
+  const k = pointTournantSous(lat, lon, props && props.ident);
+  if (k >= 0) items.push({ label: t('ctxDeleteWp'), action: () => supprimerPointTournant(k) });
+  items.push({ label: t('ctxMesure'), action: () => demarrerMesure(L.latLng(lat, lon)) });
+  if (aUneMesure()) items.push({ label: t('ctxMesureEffacer'), action: effacerMesure });
   ouvrirMenuContextuel(p.x, p.y, items);
 }
 

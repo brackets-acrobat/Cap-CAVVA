@@ -128,6 +128,8 @@ function rafraichirCouches() {
   // Points de report VFR : même seuil de zoom, mais la donnée vient du SIA et
   // non de MSFS — d'où son fichier à part (points-vfr.js).
   if (typeof rafraichirPointsVfr === 'function') rafraichirPointsVfr();
+  // Obstacles et feux aéronautiques (SIA aussi), au zoom 11.
+  if (typeof rafraichirObstacles === 'function') rafraichirObstacles();
 }
 
 async function rafraichirAeroports() {
@@ -155,16 +157,7 @@ async function rafraichirAeroports() {
     marker.on('contextmenu', (ev) => ouvrirMenuAeroport(a, ev));   // clic droit → départ/arrivée
     // Clic gauche sur un aéroport qui EST un point tournant (aimanté) → le déplacer
     // comme les autres (l'icône d'aéroport recouvre sinon le marqueur du point).
-    marker.on('mousedown', (ev) => {
-      if (ev.originalEvent && ev.originalEvent.button !== 0) return;
-      if (saisiePointEnCours()) return;   // le clic est destiné à une mesure / un flanquement
-      const code = (a.code || a.ident || '').toUpperCase();
-      const k = routeWaypoints.findIndex((w) => (w.code || '').toUpperCase() === code);
-      if (k < 0) return;   // pas un point tournant → comportement normal
-      L.DomEvent.stopPropagation(ev);
-      L.DomEvent.preventDefault(ev);
-      demarrerDeplacementPoint(k);
-    });
+    brancherReprisePointTournant(marker, a.lat, a.lon, a.code || a.ident);
     marker.addTo(isHeli ? heliportsLayer : isSea ? seaplanesLayer : airportsLayer);
   }
 }
@@ -185,6 +178,7 @@ async function rafraichirNavaids() {
     const marker = L.marker([n.lat, lonVersVue(n.lon, bbox.west)], { icon: makeNavaidIcon(n), interactive: true, keyboard: false });
     marker.bindTooltip(makeNavaidTooltipHtml(n), { direction: 'top', offset: [0, -8], className: 'navaid-tooltip', opacity: 1 });
     marker.on('contextmenu', (e) => ouvrirMenuNavaid(e, n));   // arrivée ZZZZ + cercle de portée
+    brancherReprisePointTournant(marker, n.lat, n.lon, n.ident);
     marker.addTo(navaidsLayer);
   }
 }

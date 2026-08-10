@@ -71,6 +71,7 @@ const contoursProteges = require('./contours-proteges');
 
 const FICHIER_SORTIE = 'espaces-france.geojson';
 const FICHIER_POINTS_VFR = 'points-vfr.geojson';
+const FICHIER_OBSTACLES = 'obstacles.geojson';
 
 // Les seuls types dont une Partie ponctuelle est conservée : les parcs et
 // réserves (PRN), pour lesquels un contour peut être retrouvé, et le survol
@@ -87,6 +88,7 @@ const POINTS_MINIMUM = 3;
 
 function cheminSortie() { return path.join(dossierDonnees(), FICHIER_SORTIE); }
 function cheminPointsVfr() { return path.join(dossierDonnees(), FICHIER_POINTS_VFR); }
+function cheminObstacles() { return path.join(dossierDonnees(), FICHIER_OBSTACLES); }
 
 // ------------------------------------------------------------
 // Lecture des points
@@ -161,6 +163,14 @@ const CHAMPS_VOLUME = new Set([
 const CHAMPS_ESPACE = new Set(['TypeEspace', 'Nom']);
 const CHAMPS_PARTIE = new Set(['NomUsuel', 'NomPartie', 'Geometrie']);
 const CHAMPS_NAVFIX = new Set(['NavType', 'Ident', 'Latitude', 'Longitude', 'Description', 'Situation']);
+const CHAMPS_OBSTACLE = new Set([
+  'NumeroNom', 'TypeObst', 'Combien', 'AmslFt', 'AglFt', 'Balisage',
+  'Latitude', 'Longitude', 'Remarque',
+]);
+const CHAMPS_PHARE = new Set([
+  'NumeroNom', 'Type', 'Latitude', 'Longitude', 'Situation', 'Signal',
+  'HorCode', 'HorTxt', 'Remarque',
+]);
 
 // Lit le XML en flux et renvoie { situation, espaces, parties, volumes, navfix }.
 // Le fichier est en ISO-8859-1 : Buffer.toString('latin1') le décode exactement,
@@ -175,12 +185,14 @@ function analyser(cheminXml, onProgress) {
     const parties = new Map();   // pk → { espacePk, nomUsuel, anneau }
     const volumes = [];          // { partiePk, … }
     const navfix = [];           // repères de navigation, dont les points VFR
+    const obstacles = [];        // éoliennes, pylônes, câbles…
+    const phares = [];           // feux aéronautiques au sol
     let situation = {};
 
     const parseur = sax.createStream(true, { trim: false, position: false });
     const pile = [];
-    let courant = null;      // objet Espace / Partie / Volume / NavFix en cours
-    let genre = null;        // 'espace' | 'partie' | 'volume' | 'navfix'
+    let courant = null;      // objet Espace / Partie / Volume / NavFix / Obstacle / Phare
+    let genre = null;        // 'espace' | 'partie' | 'volume' | 'navfix' | 'obstacle' | 'phare'
     let champ = null;        // nom de la balise feuille en cours
     let tampon = '';
 
@@ -198,13 +210,16 @@ function analyser(cheminXml, onProgress) {
         else if (section === 'PartieS' && n.name === 'Partie') { genre = 'partie'; courant = { pk: n.attributes.pk }; }
         else if (section === 'VolumeS' && n.name === 'Volume') { genre = 'volume'; courant = {}; }
         else if (section === 'NavFixS' && n.name === 'NavFix') { genre = 'navfix'; courant = {}; }
+        else if (section === 'ObstacleS' && n.name === 'Obstacle') { genre = 'obstacle'; courant = {}; }
+        else if (section === 'PhareS' && n.name === 'Phare') { genre = 'phare'; courant = {}; }
         else { genre = null; courant = null; }
         return;
       }
       if (p === 5 && courant) {
         // Les renvois entre niveaux sont des balises vides porteuses d'attributs.
         if (genre === 'espace' && n.name === 'Territoire') courant.territoire = n.attributes.lk;
-        else if (genre === 'navfix' && n.name === 'Territoire') courant.territoire = n.attributes.lk;
+        else if ((genre === 'navfix' || genre === 'obstacle' || genre === 'phare')
+          && n.name === 'Territoire') courant.territoire = n.attributes.lk;
         else if (genre === 'partie' && n.name === 'Espace') courant.espacePk = n.attributes.pk;
         else if (genre === 'volume' && n.name === 'Partie') courant.partiePk = n.attributes.pk;
         champ = n.name;
@@ -223,6 +238,8 @@ function analyser(cheminXml, onProgress) {
         else if (genre === 'partie' && CHAMPS_PARTIE.has(nom)) courant[nom] = tampon;
         else if (genre === 'volume' && CHAMPS_VOLUME.has(nom)) courant[nom] = tampon.trim();
         else if (genre === 'navfix' && CHAMPS_NAVFIX.has(nom)) courant[nom] = tampon.trim();
+        else if (genre === 'obstacle' && CHAMPS_OBSTACLE.has(nom)) courant[nom] = tampon.trim();
+        else if (genre === 'phare' && CHAMPS_PHARE.has(nom)) courant[nom] = tampon.trim();
         champ = null; tampon = '';
       } else if (p === 4 && courant) {
         if (genre === 'espace') {
@@ -245,6 +262,10 @@ function analyser(cheminXml, onProgress) {
           volumes.push(courant);
         } else if (genre === 'navfix') {
           navfix.push(courant);
+        } else if (genre === 'obstacle') {
+          obstacles.push(courant);
+        } else if (genre === 'phare') {
+          phares.push(courant);
         }
         courant = null; genre = null;
       }
@@ -252,7 +273,7 @@ function analyser(cheminXml, onProgress) {
     });
 
     parseur.on('error', (e) => { parseur._parser.error = null; reject(e); });
-    parseur.on('end', () => resolve({ situation, espaces, parties, volumes, navfix }));
+    parseur.on('end', () => resolve({ situation, espaces, parties, volumes, navfix, obstacles, phares }));
 
     const flux = fs.createReadStream(cheminXml);
     flux.on('error', reject);
@@ -421,6 +442,11 @@ function construirePointsVfr(navfix, situation) {
 
     const lat = nombre(n.Latitude), lon = nombre(n.Longitude);
     if (lat == null || lon == null) { sansPosition += 1; continue; }
+    // (0, 0) au large du golfe de Guinée : c'est la position manquante écrite en
+    // zéros, pas un lieu. Le cycle de juillet comme celui de septembre publient
+    // ainsi TF-MC, sans description. Le laisser passer poserait un repère au
+    // milieu de l'Atlantique et le rendrait aimantable.
+    if (lat === 0 && lon === 0) { sansPosition += 1; continue; }
 
     const ident = (n.Ident || '').trim();
     // « VRP- » préfixe toutes les descriptions : il dit ce qu'on sait déjà et
@@ -461,6 +487,113 @@ function construirePointsVfr(navfix, situation) {
   };
 }
 
+// ------------------------------------------------------------
+// Obstacles et feux aéronautiques
+// ------------------------------------------------------------
+//
+// Le SIA publie 13 452 obstacles en métropole, dont 10 612 éoliennes. Ils
+// sortent dans leur propre fichier, comme les points de report : ce ne sont pas
+// des volumes, et rien de ce qui interroge les espaces ne les concerne.
+//
+// ── Ce qu'on ne fait PAS ────────────────────────────────────────────────────
+// On ne regroupe rien. Le SIA donne une entrée par éolienne — `Combien` vaut 1
+// sur les 10 612 — et la carte OACI, elle, dessine un symbole de parc éolien.
+// Reconstituer ces parcs demanderait de décider quelle distance fait un parc :
+// ce serait notre invention, pas la donnée. Le symbole de groupe n'est donc
+// employé que là où le SIA écrit lui-même `Combien > 1`, soit 33 fois, et ce
+// sont des pylônes et des cheminées.
+//
+// ── Les deux hauteurs ───────────────────────────────────────────────────────
+// `AmslFt` est la cote du sommet, `AglFt` sa hauteur au-dessus du sol. Les deux
+// sont renseignées partout. C'est la seconde qui dit s'il faut monter, et c'est
+// sur elle que porte le filtre d'affichage — la carte OACI ne montre que les
+// obstacles de plus de 300 ft sol, mais un pylône de 250 ft reste un obstacle
+// pour qui vole à 1 000 ft sol. On garde tout, la carte décide.
+const TYPE_EOLIENNE = /^Eolienne/i;
+const TYPE_CABLE = /^C.ble$/i;
+const BALISE_NUIT = /nuit/i;
+
+function construireObstacles(obstacles, phares, situation) {
+  const features = [];
+  let horsMetropole = 0, sansPosition = 0;
+  const parType = {};
+
+  for (const o of obstacles) {
+    if (o.territoire !== TERRITOIRE_METROPOLE) { horsMetropole += 1; continue; }
+    const lat = nombre(o.Latitude), lon = nombre(o.Longitude);
+    if (lat == null || lon == null || (lat === 0 && lon === 0)) { sansPosition += 1; continue; }
+
+    const type = (o.TypeObst || '').trim() || 'Autre';
+    const combien = Math.max(1, parseInt(o.Combien, 10) || 1);
+    parType[type] = (parType[type] || 0) + 1;
+
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [+lon.toFixed(6), +lat.toFixed(6)] },
+      properties: {
+        genre: 'obstacle',
+        nom: (o.NumeroNom || '').trim() || null,
+        type,
+        // Famille de symbole : c'est tout ce dont la carte a besoin pour choisir
+        // son dessin, et ça évite de refaire la classification côté renderer.
+        forme: TYPE_CABLE.test(type) ? 'cable' : (TYPE_EOLIENNE.test(type) ? 'eolienne' : 'obstacle'),
+        combien,
+        amslFt: nombre(o.AmslFt),
+        aglFt: nombre(o.AglFt),
+        balisage: (o.Balisage || '').trim() || null,
+        nuit: BALISE_NUIT.test(o.Balisage || ''),
+        remarque: (o.Remarque || '').trim() || null,
+      },
+    });
+  }
+
+  for (const f of phares) {
+    if (f.territoire !== TERRITOIRE_METROPOLE) { horsMetropole += 1; continue; }
+    const lat = nombre(f.Latitude), lon = nombre(f.Longitude);
+    if (lat == null || lon == null || (lat === 0 && lon === 0)) { sansPosition += 1; continue; }
+
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [+lon.toFixed(6), +lat.toFixed(6)] },
+      properties: {
+        genre: 'phare',
+        nom: (f.NumeroNom || '').trim() || null,
+        // HBN = feu de danger, IBN = feu d'identification d'aérodrome.
+        type: (f.Type || '').trim() || null,
+        forme: 'phare',
+        situation: (f.Situation || '').trim() || null,
+        // Caractéristique lumineuse : « é R (1,5s) » = éclats rouges toutes les
+        // 1,5 s, « f R » = feu fixe rouge. Recopiée telle quelle.
+        signal: (f.Signal || '').trim() || null,
+        horCode: (f.HorCode || '').trim() || null,
+        horTxt: (f.HorTxt || '').trim() || null,
+        remarque: (f.Remarque || '').trim() || null,
+      },
+    });
+  }
+
+  // Les plus hauts en dernier : ils passent au-dessus des autres à l'écran, et
+  // ce sont eux qu'on doit voir quand deux symboles se chevauchent.
+  features.sort((a, b) => (a.properties.aglFt || 0) - (b.properties.aglFt || 0));
+
+  const obs = features.filter((f) => f.properties.genre === 'obstacle').length;
+
+  return {
+    type: 'FeatureCollection',
+    meta: {
+      source: 'SIA — export XML_SIA, Licence Ouverte 2.0',
+      effDate: situation.effDate || null,
+      pubDate: situation.pubDate || null,
+      converti: new Date().toISOString(),
+      obstacles: obs,
+      phares: features.length - obs,
+      parType,
+      ecartes: { horsMetropole, sansPosition },
+    },
+    features,
+  };
+}
+
 // Hauteur approximative du plancher, pour l'ordre de tracé seulement. Les trois
 // références sont ici mélangées volontairement : il ne s'agit que d'empiler des
 // polygones à l'écran, pas de juger si l'avion est dedans.
@@ -491,16 +624,26 @@ async function convertir(cheminXml, onProgress = () => {}) {
   fs.mkdirSync(path.dirname(sortie), { recursive: true });
   fs.writeFileSync(sortie, JSON.stringify(geojson), 'utf-8');
 
-  // Les points VFR ne conditionnent pas la conversion : un export qui n'en
-  // contiendrait pas reste un export valable, et les espaces priment.
+  // Ni les points VFR ni les obstacles ne conditionnent la conversion : un
+  // export qui n'en contiendrait pas reste un export valable, et les espaces
+  // priment.
   const vfr = construirePointsVfr(brut.navfix || [], brut.situation || {});
   fs.writeFileSync(cheminPointsVfr(), JSON.stringify(vfr), 'utf-8');
 
-  const meta = { ...geojson.meta, pointsVfr: vfr.meta.points };
+  const obst = construireObstacles(brut.obstacles || [], brut.phares || [], brut.situation || {});
+  fs.writeFileSync(cheminObstacles(), JSON.stringify(obst), 'utf-8');
+
+  const meta = {
+    ...geojson.meta,
+    pointsVfr: vfr.meta.points,
+    obstacles: obst.meta.obstacles,
+    phares: obst.meta.phares,
+  };
   onProgress({ type: 'termine', meta, fichier: sortie });
   return { ok: true, meta, fichier: sortie };
 }
 
 module.exports = {
-  convertir, cheminSortie, cheminPointsVfr, FICHIER_SORTIE, FICHIER_POINTS_VFR,
+  convertir, cheminSortie, cheminPointsVfr, cheminObstacles,
+  FICHIER_SORTIE, FICHIER_POINTS_VFR, FICHIER_OBSTACLES,
 };

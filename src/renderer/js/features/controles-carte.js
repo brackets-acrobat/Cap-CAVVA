@@ -30,7 +30,13 @@ function ajouterControlesCarte() {
           // de l'export du SIA. Rien ne s'affichera tant qu'il n'a pas été converti.
           `<hr class="map-dd-sep">` +
           `<label><input type="checkbox" data-layer="pointsVfr"> <span data-i18n="layerVfrPoints">${t('layerVfrPoints')}</span></label>` +
+          `<label><input type="checkbox" data-layer="phares"> <span data-i18n="layerPhares">${t('layerPhares')}</span></label>` +
           `<p class="map-dd-note" data-i18n="layerZoomNote">${t('layerZoomNote')}</p>` +
+          `<hr class="map-dd-sep">` +
+          `<label><input type="checkbox" data-layer="obstacles"> <span data-i18n="layerObstacles">${t('layerObstacles')}</span></label>` +
+          `<label class="map-dd-champ"><span data-i18n="obstMinHeight">${t('obstMinHeight')}</span>` +
+            `<input id="obst-hauteur" type="number" min="0" step="50" value="${obstacleFiltres.hauteurMinFt}"></label>` +
+          `<p class="map-dd-note" data-i18n="obstZoomNote">${t('obstZoomNote')}</p>` +
         `</div>` +
       `</div>` +
       // Widget 2 — fond de carte (boutons radio)
@@ -115,6 +121,10 @@ function ajouterControlesCarte() {
         layerState[cb.dataset.layer] = cb.checked;
         localStorage.setItem('cap-layer-' + cb.dataset.layer, cb.checked ? '1' : '0');
         rafraichirCouches();
+        // Les obstacles sont aussi tracés dans le profil vertical : la case y
+        // commande le même affichage, sinon on lirait deux états de la même
+        // donnée selon l'endroit où on regarde.
+        if (cb.dataset.layer === 'obstacles') mettreAJourProfilVertical();
       });
     });
 
@@ -127,6 +137,8 @@ function ajouterControlesCarte() {
         tracerEspaces();
       });
     });
+    div.querySelector('#obst-hauteur').addEventListener('change', (e) =>
+      appliquerHauteurMinObstacles(parseInt(e.target.value, 10)));
     div.querySelector('#esp-plancher').addEventListener('change', (e) =>
       appliquerPlancherMax(parseInt(e.target.value, 10)));
     div.querySelector('#esp-alt').addEventListener('change', rafraichirSondeEspaces);

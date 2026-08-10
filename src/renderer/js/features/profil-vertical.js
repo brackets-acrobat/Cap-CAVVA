@@ -56,6 +56,11 @@ async function mettreAJourProfilVertical() {
   }
   const legAlt = vpLegAltitudes(wps.length);
 
+  // Les obstacles peuvent n'avoir jamais été chargés : la carte ne les demande
+  // qu'au zoom 11, et on peut ouvrir le profil sans y être allé. Le tracé étant
+  // synchrone, c'est ici qu'il faut les attendre.
+  if (layerState.obstacles) await chargerObstacles();
+
   // Anti-recalcul : re-rend depuis le cache tant que plan + altitudes inchangés.
   const sig = JSON.stringify({ w: wps.map((p) => [p.lat, p.lon, p.name]), a: legAlt });
   if (sig === _vpSig && _vpLast) { _renderProfilInto(host, _vpLast); return; }
@@ -136,6 +141,11 @@ function renderProfileSVG(res) {
   const blocsEspaces = calculerEspacesProfil(vpWaypoints());
   const espacesSvg = rendreEspacesProfil(blocsEspaces, X, Y, _terrainAtDist, yMax);
 
+  // Obstacles du couloir. Tracés APRÈS le relief (voir plus bas) : ils en
+  // sortent, et un trait masqué par la colline ne servirait à rien.
+  const listeObstacles = calculerObstaclesProfil(vpWaypoints());
+  const obstaclesSvg = rendreObstaclesProfil(listeObstacles, X, Y, dist, plan);
+
   let area = `M ${X(dist[0]).toFixed(1)} ${Y(0).toFixed(1)}`;
   for (let i = 0; i < dist.length; i++) area += ` L ${X(dist[i]).toFixed(1)} ${Y(terr[i]).toFixed(1)}`;
   area += ` L ${X(dist[dist.length - 1]).toFixed(1)} ${Y(0).toFixed(1)} Z`;
@@ -184,6 +194,8 @@ function renderProfileSVG(res) {
     + espacesSvg
     + `<path d="${area}" fill="#d7e0cc" fill-opacity="0.9"/>`
     + `<path d="${tline}" fill="none" stroke="#6e8552" stroke-width="1.3"/>`
+    // Les obstacles sortent du relief : posés après lui, jamais dessous.
+    + obstaclesSvg
     + wpLines
     // Altitude prévue : magenta bordé de blanc, comme la route sur la carte.
     // Deux tracés superposés — le blanc dessous, 1 px plus large de chaque côté,
@@ -280,6 +292,15 @@ function _attachProfileHover(host) {
         + `${escapeHtml(`${z.p.type} ${z.p.nom || ''}`.trim())} · `
         + `${escapeHtml(limiteTexte(z.p.plancher, z.p.plancherRef))} → `
         + `${escapeHtml(limiteTexte(z.p.plafond, z.p.plafondRef))}</span>`;
+    }
+
+    // Obstacles du couloir sous le curseur. La hauteur sol est rappelée : c'est
+    // elle qui dit de combien il faut monter.
+    for (const o of obstaclesAuSurvol(d, totalNM / 60)) {
+      const p = o.f.properties;
+      const perce = Number.isFinite(p.amslFt) && p.amslFt >= altSurvol;
+      html += `${html ? '<br>' : ''}<span style="color:${perce ? '#e11900' : '#1c3f94'}">`
+        + `${escapeHtml(p.type)} · ${p.amslFt} ft AMSL (${p.aglFt} ft sol)</span>`;
     }
 
     if (!html) { tip.style.display = 'none'; return; }

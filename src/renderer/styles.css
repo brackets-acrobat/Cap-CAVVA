@@ -765,6 +765,26 @@ main.profil-open .leaflet-control-scale { opacity: 0; visibility: hidden; }
 .leaflet-tooltip.airport-tooltip::before,
 .leaflet-tooltip.navaid-tooltip::before,
 .leaflet-tooltip.vfr-tooltip::before { display: none; }   /* pas de flèche */
+/* Obstacles et feux aéronautiques : liseré du bleu de la carte OACI. */
+.leaflet-tooltip.obst-tooltip {
+  background: #ffffff;
+  border: 1px solid #1c3f94;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.35;
+  padding: 4px 7px;
+  max-width: 250px;
+  white-space: normal;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, .18);
+}
+.leaflet-tooltip.obst-tooltip::before { display: none; }
+.obst-tt-type { font-weight: 700; color: #1c3f94; }
+/* La hauteur sol en premier et en gras : c'est elle qui dit s'il faut monter. */
+.obst-tt-agl { font-weight: 700; margin-top: 2px; }
+.obst-tt-amsl, .obst-tt-bal { color: var(--muted); }
+.obst-tt-rem { margin-top: 3px; font-style: italic; color: var(--muted); }
+
 .vfr-tt-ident { font-weight: 700; color: #000000; }
 .vfr-tt-desc { margin-top: 2px; }
 /* Relèvement et distance depuis un moyen radio, quand le SIA les donne. */
