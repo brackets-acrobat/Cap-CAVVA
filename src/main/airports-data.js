@@ -152,7 +152,8 @@ function aeroportParCode(code) {
   const a = all.find((x) => String(x.code || '').toUpperCase() === c)
          || all.find((x) => String(x.ident || '').toUpperCase() === c);
   if (!a) return { ok: false, reason: 'not-found' };
-  return { ok: true, airport: { code: a.code, ident: a.ident, name: a.name, lat: a.lat, lon: a.lon, type: a.type } };
+  // elevation_ft : altitude du terrain, que l'export GTN750 porte dans le PLN.
+  return { ok: true, airport: { code: a.code, ident: a.ident, name: a.name, lat: a.lat, lon: a.lon, type: a.type, elevation_ft: a.elevation_ft } };
 }
 
 // Distance grand cercle (NM) entre deux points.

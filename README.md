@@ -30,6 +30,8 @@ suivi de l'avion en direct.
   magnétique et distance sur chaque branche, **log de navigation** (vent, vitesse
   propre, cap à suivre, vitesse sol, durée), copie des points au presse-papier,
   profil vertical du relief.
+- **Export vers le GTN750 de PMS50** : la route déposée en `.pln` dans le paquet
+  du simulateur, prête à être importée depuis l'instrument.
 - Position de l'avion en temps réel, mode suivi, indicateur de vent.
 
 ## Démarrage
@@ -149,6 +151,36 @@ dernière valeur. La vitesse propre, elle, reste toujours au pilote.
 Un plan `.ccfp` conserve la vitesse propre et le vent avec la route. Un plan
 chargé n'écrase pas le vent du simulateur pendant qu'on vole.
 
+### Vers le GTN750 de PMS50
+
+Le bouton **GPS** de la barre dépose la route dans l'instrument. Celui-ci
+n'accepte qu'un format — le PLN de MSFS — sous un nom qu'il est seul à lire :
+
+```
+<Community>/pms50-instrument-gtn750/fpl/gtn750/fpl.pln
+```
+
+Le dossier `Community` de MSFS 2024 est retrouvé par `InstalledPackagesPath`
+dans `UserCfg.opt`, aux deux emplacements possibles (Steam, Microsoft Store).
+Le fichier précédent est remplacé : l'instrument ne connaît que ce nom-là.
+Côté simulateur, il reste à presser **Import** dans le menu de la page Flight
+Plan. C'est une fonction Premium du GTN750, indisponible sur Xbox et sur les
+paquets installés depuis le Marketplace.
+
+**Les points tournants partent en points utilisateur, sans exception.** La
+documentation de PMS50 avertit qu'un point associé à un aérodrome, mal écrit par
+une application tierce, fait planter le simulateur. Or c'est exactement ce
+qu'est un point de report VFR français : `NE`, `SIERRA`, `MM-CV` n'existent
+qu'attachés à leur terrain. Un point tournant part donc avec ses seules
+coordonnées et aucun bloc ICAO — la route du GTN est celle de la carte au mètre
+près, et le risque est écarté. Seuls le départ et l'arrivée gardent leur
+identité d'aérodrome.
+
+Les identifiants sont ramenés à cinq caractères, sans accent ni espace, comme le
+GTN750 les porte ; les homonymes sont numérotés. Chaque point reçoit l'altitude
+de la branche qui y **arrive** — celle à laquelle on le franchit — et
+`CruisingAlt` reprend la plus haute des branches.
+
 ## Arborescence
 
 Un fichier par fonctionnalité, des deux côtés.
@@ -164,6 +196,7 @@ Un fichier par fonctionnalité, des deux côtés.
 | `declinaison.js` | Déclinaison magnétique (WMM) |
 | `contours-proteges.js` | Rend leur surface aux parcs et réserves du SIA |
 | `plan-io.js` | Sauvegarde et ouverture d'un plan (`.ccfp`) |
+| `export-gtn750.js` | Dépôt du plan de vol (`.pln`) pour le GTN750 de PMS50 |
 | `brief-source.js` | Briefs de séance : téléchargement, clé, signature |
 | `brief-crypto.js` | Signature HMAC des briefs |
 | `updater.js` | Mise à jour automatique |

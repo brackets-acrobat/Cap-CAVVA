@@ -73,6 +73,7 @@ contextBridge.exposeInMainWorld('cap', {
   declinaison: (lat, lon) => ipcRenderer.invoke('declinaison', { lat, lon }),
   sauverPlan: (charge) => ipcRenderer.invoke('sauver-plan', charge),
   ouvrirPlan: (charge) => ipcRenderer.invoke('ouvrir-plan', charge),
+  exporterGtn750: (charge) => ipcRenderer.invoke('exporter-gtn750', charge),
 
   // Mise à jour automatique
   installUpdate: () => ipcRenderer.invoke('update-install'),

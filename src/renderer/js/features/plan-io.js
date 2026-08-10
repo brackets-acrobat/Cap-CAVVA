@@ -63,7 +63,9 @@ function planEnregistrable() {
   return !!nettoyerIcao($('icao-dep').value) && !!nettoyerIcao($('icao-arr').value);
 }
 function majBoutonsPlan() {
-  $('btn-save-plan').disabled = !planEnregistrable();
+  const pret = planEnregistrable();
+  $('btn-save-plan').disabled = !pret;
+  $('btn-export-gtn750').disabled = !pret;   // même exigence : un départ ET une arrivée
 }
 
 $('btn-save-plan').addEventListener('click', async () => {

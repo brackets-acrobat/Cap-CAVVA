@@ -17,6 +17,7 @@
 //   elevation.js    relief GLOBE et profil vertical
 //   declinaison.js  déclinaison magnétique (WMM)
 //   plan-io.js      sauvegarde et ouverture d'un plan de vol
+//   export-gtn750.js  dépôt du plan de vol pour le GTN750 de PMS50
 //   brief-source.js briefs de séance téléchargés depuis CAVVA
 //   acces.js        l'application est-elle ouverte à cet utilisateur ?
 //   updater.js      mise à jour automatique
@@ -42,6 +43,7 @@ const declinaison = require('./declinaison');
 const vacSia = require('./vac-sia');
 const ficheUlm = require('./fiche-ulm');
 const planIo = require('./plan-io');
+const exportGtn750 = require('./export-gtn750');
 const { setupAutoUpdater, quitAndInstall } = require('./updater');
 
 const TITRE = 'Cap CAVVA';
@@ -284,6 +286,7 @@ ipcMain.handle('ouvrir-fiche-ulm', async (_e, { lat, lon } = {}) => ficheUlm.ouv
 ipcMain.handle('declinaison', async (_e, { lat, lon } = {}) => declinaison.en(lat, lon));
 ipcMain.handle('sauver-plan', async (_e, charge) => planIo.sauver(fenetre, charge));
 ipcMain.handle('ouvrir-plan', async (_e, charge) => planIo.ouvrir(fenetre, charge));
+ipcMain.handle('exporter-gtn750', async (_e, charge) => exportGtn750.ecrire(charge));
 
 // Mise à jour
 ipcMain.handle('update-install', async () => { quitAndInstall(); return { ok: true }; });
