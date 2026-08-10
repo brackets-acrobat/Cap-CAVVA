@@ -97,9 +97,18 @@ function _renderProfilInto(host, res) {
 
 // Publie la hauteur réelle du panneau profil dans --vp-h (sur <main>), pour que
 // les contrôles Leaflet du bas (barre d'échelle) soient remontés juste au-dessus.
+// La bande s'ouvre à peu près vide et grandit quand le relief arrive : le
+// milieu de la carte visible bouge donc APRÈS l'ouverture, d'où le recentrage
+// ici aussi — sinon un simulateur en pause laisserait l'avion décalé.
+let _vpHauteurPubliee = -1;
 function _vpMajHauteur() {
   const panel = $('vp-panel');
-  if (panel) document.querySelector('main').style.setProperty('--vp-h', panel.offsetHeight + 'px');
+  if (!panel) return;
+  const h = panel.offsetHeight;
+  if (h === _vpHauteurPubliee) return;   // rien n'a bougé → aucun recentrage gratuit
+  _vpHauteurPubliee = h;
+  document.querySelector('main').style.setProperty('--vp-h', h + 'px');
+  if (suiviActif && !suiviPause) recentrerAvion();
 }
 
 // Bandeau texte : point culminant de la route + marge mini réelle ; alerte si un
@@ -332,6 +341,10 @@ function ouvrirFermerProfil(ouvrir) {
   profilBtn.setAttribute('aria-pressed', String(ouvrir));
   // Remonte les contrôles Leaflet du bas (barre d'échelle) au-dessus de la bande profil.
   document.querySelector('main').classList.toggle('profil-open', ouvrir);
+  // La bande vient de prendre (ou de rendre) le bas de la carte : en suivi,
+  // l'avion doit revenir au milieu de ce qui reste visible, sans attendre la
+  // trame suivante. Hors suivi, la carte est au pilote : on n'y touche pas.
+  if (suiviActif && !suiviPause) recentrerAvion();
   if (ouvrir) mettreAJourProfilVertical();
 }
 profilBtn.addEventListener('click', () => ouvrirFermerProfil($('vp-panel').hidden));

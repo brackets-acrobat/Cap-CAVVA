@@ -37,14 +37,23 @@ function construireLegs(points, disp, wps) {
   const rows = [];
   for (let i = 0; i < points.length - 1; i++) {
     const a = points[i], b = points[i + 1];
-    const capVrai = capVraiInitial(a.lat, disp[i], b.lat, disp[i + 1]);
+    // Route VRAIE de la branche (la carte est nord-vrai) — c'est la colonne
+    // « Route », et l'entrée du triangle des vitesses (le vent est en vrai).
+    const routeVraie = capVraiInitial(a.lat, disp[i], b.lat, disp[i + 1]);
     const decl = declinaisonEn((a.lat + b.lat) / 2, (disp[i] + disp[i + 1]) / 2);
-    const capMag = Math.round(((capVrai - decl) % 360 + 360) % 360);
+    const distNm = distanceNM(a.lat, disp[i], b.lat, disp[i + 1]);
+    // Triangle des vitesses (route non arrondie), null tant que la vitesse
+    // propre manque ou que le vent rend la route intenable.
+    const nav = brancheAvecTemps(routeVraie, distNm);
+    // Colonne « Cap » : cap MAGNÉTIQUE à suivre. Le passage en magnétique n'a
+    // lieu qu'ici, avec la déclinaison LOCALE de la branche. Sans triangle
+    // (pas de Vp), il n'y a pas de dérive à ajouter : le cap vaut la route.
+    const capMag = (((nav ? nav.capVrai : routeVraie) - decl) % 360 + 360) % 360;
     rows.push({
       from: nomDe(i), to: nomDe(i + 1),
       fromWp: wpIdxDe(i), toWp: wpIdxDe(i + 1),
-      capMag, decl, distNm: distanceNM(a.lat, disp[i], b.lat, disp[i + 1]),
-      legIdx: i, alt: getLegAlt(i),
+      routeVraie, capMag, decl, distNm,
+      legIdx: i, alt: getLegAlt(i), nav,
     });
   }
   return rows;
@@ -68,6 +77,7 @@ function rafraichirTableauLegs() {
     tbody.innerHTML = '';
     if (empty) empty.hidden = false;
     if (totalEl) totalEl.textContent = '—';
+    afficherTempsTotal(null);
     return;
   }
   const points = [_routeDep, ...routeWaypoints, _routeArr];
@@ -78,18 +88,42 @@ function rafraichirTableauLegs() {
     const total = rows.reduce((s, r) => s + r.distNm, 0);
     totalEl.textContent = formatDistNM(total) + ' NM';
   }
+  // Temps total : la somme n'a de sens que si TOUTES les branches en ont un.
+  afficherTempsTotal(rows.every((r) => r.nav) ? rows.reduce((s, r) => s + r.nav.secondes, 0) : null);
   const actLeg = legActifClamp();
+  const deg = (v) => String(Math.round(v) % 360).padStart(3, '0') + '°';
   tbody.innerHTML = rows.map((r) => {
-    const cap = String(r.capMag).padStart(3, '0');
-    const declTxt = (r.decl >= 0 ? '+' : '') + r.decl.toFixed(1);
-    const hint = escapeHtml(t('legsDeclHint').replace('{d}', declTxt));
-    const altTxt = `${r.alt} ft`;
+    // Le cap se lit à trois termes : route vraie, dérive du vent, déclinaison.
+    // L'infobulle les donne tous — c'est le calcul que le pilote refait à la main.
+    const capHint = escapeHtml(t('legsCapHint')
+      .replace('{r}', deg(r.routeVraie))
+      .replace('{v}', (r.nav && r.nav.derive >= 0 ? '+' : '') + (r.nav ? r.nav.derive.toFixed(0) : '0'))
+      .replace('{d}', (r.decl >= 0 ? '+' : '') + r.decl.toFixed(1)));
+    const sansTemps = escapeHtml(indiceSansTemps());
+    const gsTxt = r.nav ? String(Math.round(r.nav.vs)) : '—';
+    const tempsTxt = r.nav ? formatDuree(r.nav.secondes) : '—';
+    const tempsHint = r.nav ? '' : ` title="${sansTemps}"`;
     const rowCls = r.legIdx === actLeg ? ' class="leg-row-active"' : (r.legIdx < actLeg ? ' class="leg-row-past"' : '');
-    return `<tr data-leg="${r.legIdx}"${rowCls}>${celluleNom(r.from, r.fromWp)}${celluleNom(r.to, r.toWp)}`
-      + `<td class="legs-num" title="${hint}">${cap}°</td>`
-      + `<td class="legs-num legs-alt is-editable" data-leg="${r.legIdx}">${altTxt}</td>`
-      + `<td class="legs-num">${formatDistNM(r.distNm)}</td></tr>`;
+    return `<tr data-leg="${r.legIdx}"${rowCls}>`
+      + `<td class="legs-num legs-idx">${r.legIdx + 1}</td>`
+      + celluleNom(r.from, r.fromWp) + celluleNom(r.to, r.toWp)
+      + `<td class="legs-num legs-alt is-editable" data-leg="${r.legIdx}">${r.alt}</td>`
+      + `<td class="legs-num">${formatDistNM(r.distNm)}</td>`
+      + `<td class="legs-num" title="${escapeHtml(t('legsRouteHint'))}">${deg(r.routeVraie)}</td>`
+      + `<td class="legs-num" title="${capHint}">${deg(r.capMag)}</td>`
+      + `<td class="legs-num"${tempsHint}>${gsTxt}</td>`
+      + `<td class="legs-num"${tempsHint}>${tempsTxt}</td></tr>`;
   }).join('');
+}
+
+// Temps total dans l'en-tête : masqué tant qu'aucune vitesse propre n'est
+// donnée (rien à dire), « — » si le vent rend une branche intenable.
+function afficherTempsTotal(secondes) {
+  const wrap = $('legs-total-time-wrap');
+  const val = $('legs-total-time');
+  if (!wrap || !val) return;
+  wrap.hidden = !(_planVp > 0);
+  val.textContent = secondes == null ? '—' : formatDuree(secondes);
 }
 
 // Édition en ligne générique d'une cellule du tableau : Entrée valide (via
@@ -120,17 +154,20 @@ function editerCelluleTableau(td, { initial, maxLength, numeric, onValider }) {
     if (e.key === 'Enter') { e.preventDefault(); finir(true); }
     else if (e.key === 'Escape') { e.preventDefault(); finir(false); }
   });
-  input.addEventListener('blur', () => finir(false));
+  // Cliquer ailleurs VALIDE. Perdre sa saisie parce qu'on a cliqué à côté est
+  // le contraire de ce qu'on attend d'un tableau ; seule Échap annule.
+  input.addEventListener('blur', () => finir(true));
 }
 
 // Renommage d'un point tournant (met à jour la carte + le tableau).
+const WP_NOM_MAX = 50;   // longueur d'un nom de point tournant
 function demarrerEditionNom(td) {
   const wpIdx = parseInt(td.dataset.wp, 10);
   if (!(wpIdx >= 0) || !routeWaypoints[wpIdx]) return;
   editerCelluleTableau(td, {
-    initial: td.textContent, maxLength: 12, numeric: false,
+    initial: td.textContent, maxLength: WP_NOM_MAX, numeric: false,
     onValider: (raw) => {
-      const v = raw.trim().slice(0, 12);
+      const v = raw.trim().slice(0, WP_NOM_MAX);
       const wp = routeWaypoints[wpIdx];
       if (wp) { if (v) wp.nom = v; else delete wp.nom; }   // vide → revient au nom auto (WPn/code)
       dessinerRoute();   // ré-étiquette la carte + reconstruit le tableau
@@ -187,6 +224,11 @@ function ouvrirFermerLegs(ouvrir) {
   // (brief-seance.js est chargé après ce fichier — d'où la garde.)
   if (ouvrir && typeof fermerBrief === 'function') fermerBrief();
   if (ouvrir) rafraichirTableauLegs();
+  // Le panneau vient de prendre (ou de rendre) la droite de la carte : en
+  // suivi, l'avion doit revenir au milieu de ce qui reste visible, sans
+  // attendre la trame suivante. Hors suivi, la carte est au pilote : on n'y
+  // touche pas.
+  if (suiviActif && !suiviPause) recentrerAvion();
   mettreAJourProfilVertical();   // la largeur de la bande profil change avec ce panneau
 }
 legsBtn.addEventListener('click', () => ouvrirFermerLegs($('legs-panel').hidden));

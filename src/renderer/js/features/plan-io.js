@@ -48,6 +48,12 @@ function construirePlan() {
     // Flanquements VOR : identité de la station et positions seulement. Radial
     // et distance sont recalculés à la lecture, la déclinaison ayant pu changer.
     flanquements: flanquementsEnregistrables(),
+    // Paramètres de navigation : vitesse propre et vent prévu (direction
+    // MAGNÉTIQUE d'où vient le vent). Les temps par branche en découlent — ils
+    // ne sont pas stockés, ils se recalculent.
+    vitessePropre: Number.isFinite(_planVp) ? _planVp : null,
+    ventDir: Number.isFinite(_planVentDir) ? _planVentDir : null,
+    ventKt: Number.isFinite(_planVentKt) ? _planVentKt : null,
     cree: new Date().toISOString(),
   };
 }
@@ -100,6 +106,12 @@ function appliquerPlan(plan) {
     : [];
   _legAltDep = Number.isFinite(plan.departAlt) ? plan.departAlt : null;
   _legActif = 0;   // nouveau plan chargé → leg actif = premier
+  // Paramètres de navigation : un plan qui en porte impose les siens, fût-ce
+  // des cases vides. Les plans antérieurs à leur introduction n'ont aucune de
+  // ces clés — la saisie en cours est alors laissée intacte plutôt qu'effacée.
+  if ('vitessePropre' in plan || 'ventDir' in plan || 'ventKt' in plan) {
+    appliquerParamsNav({ vp: plan.vitessePropre, ventDir: plan.ventDir, ventKt: plan.ventKt });
+  }
   majBoutonsPlan();
   majLigneRoute({ fit: true });   // re-résout les ICAO, redessine, recalcule la déclinaison, recadre sur le tracé
   chargerFlanquements(plan.flanquements);   // absent des plans antérieurs : la liste est alors vide
@@ -117,6 +129,9 @@ function reinitialiserPlan() {
   _legActif = 0;
   effacerCercles();   // comme NavXpressVFR : « Nouveau plan » efface aussi les cercles
   effacerTousFlanquements();   // les flanquements visent des points de CETTE route
+  // Vitesse propre et vent : DÉLIBÉRÉMENT conservés. L'avion du jour et le vent
+  // du jour ne changent pas parce qu'on retrace une route ; les ressaisir à
+  // chaque essai serait une corvée. Un plan chargé, lui, impose les siens.
   majBoutonsPlan();
   majLigneRoute();   // dép./arr. vides → la route est effacée
 }

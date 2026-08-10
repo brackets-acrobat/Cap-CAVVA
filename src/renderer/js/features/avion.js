@@ -35,10 +35,12 @@ function majCarte(f) {
   if (!planeMarker) {
     planeMarker = L.marker(ll, { icon: planeIcon }).addTo(map);
     capPrecedent = null;   // nouveau marqueur → repart d'une orientation absolue
-    map.setView(ll, 13);   // premier point : on cadre sur l'avion
+    map.setView(ll, 13);   // premier point : on cadre sur l'avion, zoom d'abord…
+    map.panTo(centreVisiblePour(ll), { animate: false });   // …puis décalage du panneau
   } else {
     planeMarker.setLatLng(ll);
-    if (suiviActif && !suiviPause) map.panTo(ll);   // recentre (zoom inchangé)
+    // Recentre (zoom inchangé), au milieu de la carte RESTÉE VISIBLE.
+    if (suiviActif && !suiviPause) map.panTo(centreVisiblePour(ll));
   }
   // Tracé continu magenta, 3 px, qui suit l'avion.
   if (!planeTrack) {
@@ -62,6 +64,7 @@ function viderScan() {
   if (map && planeTrack) { map.removeLayer(planeTrack); planeTrack = null; }
   $('wind-indicator').hidden = true;
   _ventLastUpdate = 0;
+  libererCasesVent();   // plus de simulateur → les cases vent redeviennent saisissables
   reinitAlerteEspaces();   // la déconnexion efface l'avertissement et sa mémoire
   suiviPause = false;
   if (_suiviTimer) { clearTimeout(_suiviTimer); _suiviTimer = null; }
@@ -76,6 +79,7 @@ function majScan(f) {
   $('b-amsl').textContent = fmt(f.amslFt);
   majCarte(f);
   majVent(f);
+  majVentPlanDepuisSim(f);     // vent du plan : injection dans les cases toutes les 30 s
   majLegActifDepuisAvion(f);   // séquencement du leg actif selon la position avion
   majAlerteEspaces(f);         // bandeau avant pénétration d'un espace
 }

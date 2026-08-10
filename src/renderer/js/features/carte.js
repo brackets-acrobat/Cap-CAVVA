@@ -161,9 +161,38 @@ function appliquerFond(key) {
   localStorage.setItem('cap-basemap', BASE_LAYERS[key] ? key : 'opentopomap');
 }
 
+// Largeur (px) du panneau qui recouvre la carte sur sa droite — plan de vol ou
+// brief, jamais les deux ensemble. 0 si aucun n'est ouvert.
+function largeurPanneauDroite() {
+  const p = document.querySelector('#legs-panel:not([hidden]), #brief-panel:not([hidden])');
+  return p ? p.getBoundingClientRect().width : 0;
+}
+
+// Hauteur (px) de la bande du profil vertical, qui recouvre le bas de la carte.
+// Mesurée à chaque appel plutôt que lue dans --vp-h : sa hauteur suit son
+// contenu et change d'un rendu à l'autre.
+function hauteurBandeBas() {
+  const p = document.querySelector('#vp-panel:not([hidden])');
+  return p ? p.getBoundingClientRect().height : 0;
+}
+
+// Centre de carte à viser pour qu'un point apparaisse au milieu de la partie
+// VISIBLE de la carte. Le conteneur, lui, court sous les panneaux : viser le
+// point tel quel le poserait au milieu du conteneur, donc caché par le panneau
+// de droite, par la bande du profil, ou les deux. On décale donc le centre
+// d'une demi-largeur de panneau vers la droite et d'une demi-hauteur de bande
+// vers le bas — même correction que celle appliquée à l'indicateur de vent.
+function centreVisiblePour(latlng) {
+  const dx = largeurPanneauDroite() / 2;
+  const dy = hauteurBandeBas() / 2;
+  if (!map || (dx === 0 && dy === 0)) return latlng;
+  const p = map.latLngToContainerPoint(latlng);
+  return map.containerPointToLatLng([p.x + dx, p.y + dy]);
+}
+
 // Recentre la carte sur l'avion (zoom inchangé).
 function recentrerAvion() {
-  if (map && planeMarker) map.panTo(planeMarker.getLatLng());
+  if (map && planeMarker) map.panTo(centreVisiblePour(planeMarker.getLatLng()));
 }
 
 // Active/désactive le suivi (persisté). À l'activation, recentre tout de suite.
