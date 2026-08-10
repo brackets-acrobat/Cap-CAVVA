@@ -15,12 +15,21 @@ suivi de l'avion en direct.
 - Import des **aéroports et navaids depuis MSFS 2024** (le simulateur est la source).
 - **Espaces aériens français** tracés en vectoriel, interrogeables, depuis l'export
   XML du SIA converti localement.
+- **Points de report VFR** : les 1 098 repères de métropole, avec le repère au sol
+  qui permet de les trouver à vue — « Cavaillon (Pont TGV sur la Durance) ».
+  Aimantables comme points tournants.
+- **Obstacles et feux aéronautiques** : 13 452 obstacles et 50 feux, symboles et
+  bleu repris de la carte OACI au 1/500 000, filtre de hauteur réglable.
+- **Parcs et réserves à hauteur de survol imposée** : le SIA n'en donne le contour
+  que pour 7 des 94 zones ; les autres le reçoivent d'une bibliothèque livrée avec
+  l'application (voir plus bas).
 - **Briefs des séances** téléchargés depuis CAVVA et vérifiés par signature : le
   calendrier complet, avec type de vol, aérodrome d'arrivée, rayon de départ et
   zones actives.
-- Plan de vol tracé à la souris : points tournants nommables, étiquette de **cap
-  magnétique** (déclinaison WMM locale) et distance sur chaque branche, tableau des
-  legs, copie des points au presse-papier, profil vertical du relief.
+- **Plan de vol** tracé à la souris : points tournants nommables, étiquette de cap
+  magnétique et distance sur chaque branche, **log de navigation** (vent, vitesse
+  propre, cap à suivre, vitesse sol, durée), copie des points au presse-papier,
+  profil vertical du relief.
 - Position de l'avion en temps réel, mode suivi, indicateur de vent.
 
 ## Démarrage
@@ -74,7 +83,71 @@ Aucune conversion, aucun QNH à appliquer.
 
 **Ce qu'il ne contient pas** : près de la moitié des « parties » de l'export sont des
 points isolés sans rayon (terrains privés, voltige, parachutage, survol de sites,
-parcs). Elles sont comptées puis écartées à la conversion — pas devinées.
+parcs). Elles sont comptées puis écartées à la conversion — pas devinées. Les
+**parcs et réserves** font seule exception, et par apport extérieur, pas par
+déduction : voir ci-dessous.
+
+## Les contours des parcs et réserves
+
+L'export du SIA décrit 94 zones `PRN` en métropole — parcs nationaux et réserves
+naturelles à hauteur minimale de survol imposée — mais n'en donne le contour que
+pour 7. Cocher « Parcs et survol » n'allumait donc presque rien.
+
+Le contour manquant vient d'une bibliothèque **livrée avec l'application**
+(`src/main/bundled-data/contours-proteges.json.gz`), extraite de la **BD TOPO de
+l'IGN** via la Géoplateforme et régénérable par `npm run contours:maj`. C'est le
+seul cas où Cap CAVVA embarque de la donnée plutôt qu'une clé d'accès : les
+navaids viennent de MSFS, les fiches ULM de la FFPLUM, et les fichiers embarqués
+correspondants ne sont que ce qu'il faut pour aller les chercher.
+
+**Le SIA reste seul à dire la règle.** La bibliothèque ne contient que des
+géométries. Quelles zones existent, à quelle hauteur le survol est interdit, à
+qui l'interdiction ne s'applique pas : tout cela vient du SIA, cycle par cycle.
+Le rapprochement se fait donc à la conversion, et non une fois pour toutes dans
+la bibliothèque — un cycle AIRAC qui ajoute une réserve la verra rapprochée sans
+qu'on retouche à rien. Ce qui ne se rapproche pas reste un point, sans contour
+inventé.
+
+Les **parcs naturels régionaux** en sont volontairement absents : ils ne portent
+aucune interdiction de survol. Les zones `SUR` non plus — ce sont pour la plupart
+des sites industriels, centrales et centres pénitentiaires, sans contour public
+correspondant ; elles restent des repères.
+
+Données © IGN — BD TOPO®, Licence Ouverte 2.0, la même que l'export du SIA.
+
+## Le plan de vol
+
+Le panneau « Plan de vol » tient le **log de navigation**, une ligne par branche :
+
+| N° | Départ | Arrivée | Alt (ft) | Dist (nm) | Route (°) | Cap (°) | GS (kt) | Durée |
+|---|---|---|---|---|---|---|---|---|
+
+Une **vitesse propre** et un **vent** en tête de panneau donnent, branche par
+branche, le triangle des vitesses : dérive, cap à suivre, vitesse sol, donc la
+durée. Double-clic pour renommer un point ou changer une altitude ; cliquer
+ailleurs valide, seule Échap annule.
+
+**Deux référentiels, et un seul passage de l'un à l'autre.** Le vent se saisit en
+**vrai** : c'est ce que donne MSFS (`AMBIENT WIND DIRECTION`) et ce qu'écrit un
+METAR, donc rien à convertir en entrée. La colonne « Route » est la route vraie,
+la carte étant nord-vrai. Le passage en magnétique n'a lieu qu'au bout de la
+chaîne, dans la colonne « Cap » :
+
+```
+Cap = route vraie + dérive − déclinaison locale de la branche
+```
+
+La déclinaison est celle du **milieu de chaque branche** (WMM), pas une moyenne
+du plan. L'indicateur de vent de la carte, lui, reste affiché en magnétique —
+c'est ce que l'ATIS annonce.
+
+**MSFS connecté**, les deux cases de vent passent en lecture seule, prennent le
+vent du simulateur et se rafraîchissent toutes les 30 secondes ; un badge `MSFS`
+le signale. À la déconnexion elles redeviennent saisissables en gardant la
+dernière valeur. La vitesse propre, elle, reste toujours au pilote.
+
+Un plan `.ccfp` conserve la vitesse propre et le vent avec la route. Un plan
+chargé n'écrase pas le vent du simulateur pendant qu'on vole.
 
 ## Arborescence
 
@@ -89,15 +162,21 @@ Un fichier par fonctionnalité, des deux côtés.
 | `airports-data.js` | Bases extraites, requêtes par bbox |
 | `elevation.js` | Relief GLOBE et profil vertical |
 | `declinaison.js` | Déclinaison magnétique (WMM) |
+| `contours-proteges.js` | Rend leur surface aux parcs et réserves du SIA |
 | `plan-io.js` | Sauvegarde et ouverture d'un plan (`.ccfp`) |
 | `brief-source.js` | Briefs de séance : téléchargement, clé, signature |
 | `brief-crypto.js` | Signature HMAC des briefs |
 | `updater.js` | Mise à jour automatique |
 
-`src/renderer/js/features/` porte une vingtaine de fichiers sur le même principe
-(`carte.js`, `route.js`, `etiquettes-legs.js`, `avion.js`…). L'ordre des `<script>`
-dans `index.html` fait la dépendance : pas de modules ES, portée globale partagée —
-convention reprise de NavXpressVFR.
+`src/renderer/js/features/` porte une trentaine de fichiers sur le même principe
+(`carte.js`, `route.js`, `panneau-plan.js`, `vent-plan.js`, `obstacles.js`,
+`points-vfr.js`, `avion.js`…). L'ordre des `<script>` dans `index.html` fait la
+dépendance : pas de modules ES, portée globale partagée — convention reprise de
+NavXpressVFR.
+
+Deux fichiers portent le vent, et ne se confondent pas : `vent.js` n'affiche que
+l'indicateur temps réel de la carte, `vent-plan.js` tient les paramètres de
+navigation du plan et le triangle des vitesses.
 
 ## Les briefs de séance
 
@@ -144,7 +223,15 @@ puis, dans un autre terminal, `CAVVA_BASE_URL=http://127.0.0.1:8787 npm start`.
 ## Crédits
 
 L'extraction des navaids depuis MSFS 2024 s'inspire de la méthode du projet
-**atools / Little Navmap** d'Alexander Barthel.
+**atools / Little Navmap** d'Alexander Barthel, dont le séquencement du leg actif
+est également un portage fidèle.
+
+Le log de navigation reprend la disposition et le calcul de **NavXpressVFR**, du
+même auteur.
+
+Sources de données, toutes en Licence Ouverte 2.0 : **SIA** (espaces, points de
+report, obstacles, feux), **IGN — BD TOPO®** (contours des parcs et réserves),
+**FFPLUM / BASULM** (fiches ULM).
 
 ## Licence
 
