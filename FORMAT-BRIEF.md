@@ -115,6 +115,33 @@ Aucun des deux, et l'application le **dit** (code `secret`, « cette copie n'a p
 de secret de signature ») au lieu de rejeter tous les briefs comme falsifiés —
 deux diagnostics qui n'ont rien à voir.
 
+#### À l'empaquetage
+
+`dist` et `publish` enchaînent `outils/injecter-secret.js` par `&&` : il passe
+avant `electron-builder`, et son échec annule la publication. Il résout, dans
+cet ordre :
+
+| | |
+|---|---|
+| `--generer` | fabrique un secret neuf ; refuse d'écraser un fichier existant |
+| `CAP_CAVVA_BRIEF_SECRET` | l'injecte dans le fichier — rotation, ou premier poste |
+| le fichier déjà en place | **gardé tel quel**, empreinte affichée |
+| rien de tout cela | échec : il n'y a rien à embarquer |
+
+Le troisième cas est celui de toute publication ordinaire, et **n'écrit pas**.
+La date de `src/main/brief-secret.js` est donc celle de la dernière vraie
+injection, pas celle du dernier empaquetage : un fichier daté de plusieurs
+versions en arrière est normal, et non le signe que l'étape a été sautée.
+
+> Ce cas manquait jusqu'à la 1.3.0 : le script exigeait la variable, alors que
+> le fichier suffisait déjà à `brief-crypto.js`. Comme rien ne pose cette
+> variable de façon durable, toute publication depuis un terminal neuf s'arrêtait
+> sur le `&&`. C'est ce qui a bloqué la publication de la 1.3.0.
+
+L'empreinte imprimée à chaque passage — les 12 premiers caractères du SHA-256 —
+est le moyen de vérifier qu'un poste et le serveur parlent du même secret sans
+jamais l'afficher.
+
 > **À sauvegarder hors du dépôt.** Ce secret est la seule chose qui relie
 > l'application au serveur. Le perdre oblige à en regénérer un *et* à remettre la
 > clé dérivée dans `config.local.php` du site.
