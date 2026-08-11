@@ -84,6 +84,9 @@ i[class^="ph-"], i[class*=" ph-"] {
   justify-content: space-between;
   gap: .5rem 1rem;
   flex-wrap: wrap;
+  /* Repère de positionnement du bloc chronomètres, centré sur la BARRE et non
+     sur la place qui reste entre les deux groupes (voir .chrono-bar). */
+  position: relative;
   padding: .75rem 1.25rem;
   /* Ardoise, comme la barre d'outils de Tours. Tout ce qu'elle porte passe donc
      en clair : un bouton plein s'y voit, un bouton à contour non. */
@@ -117,6 +120,98 @@ i[class^="ph-"], i[class*=" ph-"] {
 .btn.btn-state-wait:hover, .btn.btn-state-wait:focus-visible { background: #92400e; }
 .btn.btn-state-on   { background: var(--vert); color: #fff; }
 .btn.btn-state-on:hover,   .btn.btn-state-on:focus-visible   { background: var(--vert-h); }
+
+/* ============================================================
+   Chronomètre et temps de vol, au centre de la barre ardoise.
+   Repris de NavXpressVFR, transposé sur la palette de Tours : là-bas le fond
+   était presque noir et les compteurs cyan ; ici le fond est l'ardoise, et les
+   couleurs sortent de la charte.
+   ============================================================ */
+
+/* HORS DU FLUX, centré sur la barre. Les deux groupes qui l'encadrent n'ont pas
+   la même largeur (à peu près 695 px à gauche contre 292 à droite) : laissé dans
+   le flux avec space-between, le bloc se poserait à mi-chemin entre eux, donc
+   visiblement décalé vers la droite. */
+.chrono-bar {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+/* Fenêtre étroite : la place au centre ne suffit plus et le bloc absolu passerait
+   PAR-DESSUS les boutons. On le rend au flux, où il se range entre les deux
+   groupes et sait passer à la ligne. Le seuil vient du calcul ci-dessus :
+   695 (gauche) + 395 (le bloc) + 292 (droite) ≈ 1380 px, plus de quoi respirer.
+   Les 395 px sont mesurés sur le contenu : deux icônes de 20, les compteurs à 74
+   et 104, quatre boutons de 28, et les écarts. */
+@media (max-width: 1500px) {
+  .chrono-bar { position: static; left: auto; top: auto; transform: none; }
+}
+
+.chrono-item { display: flex; align-items: center; gap: 7px; }
+
+/* L'icône tient le rôle du libellé « CHRONOMÈTRE » / « TIMER » de NavXpressVFR :
+   sablier pour le temps de vol, chronomètre pour l'autre. Son infobulle donne le
+   mot, dans la langue courante. */
+.chrono-icone { font-size: 20px; opacity: .85; cursor: default; }
+
+/* Le compteur, en chasse fixe et en boîte creusée dans l'ardoise : les chiffres
+   ne dansent pas d'une seconde à l'autre, et la boîte le détache de la barre.
+   Largeur fixée par le format, pour que MM:SS et HH:MM:SS ne se déforment pas
+   quand un chiffre change. */
+.chrono-display {
+  min-width: 74px;
+  padding: 3px 8px;
+  border: 1px solid var(--ardoise-line);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, .25);
+  color: var(--sep);
+  font-family: var(--mono);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+#timer-display { min-width: 104px; }   /* HH:MM:SS : deux caractères de plus */
+
+/* En marche, le compteur passe au vert — l'état se lit sur le nombre lui-même,
+   sans qu'on ait à interpréter l'icône du bouton. Vert clair et non var(--vert)
+   (#059669) : celui-là est fait pour porter du texte blanc sur un bouton, il est
+   trop sombre pour être LU sur l'ardoise. */
+.chrono-display.est-en-marche { color: #34d399; }
+
+.chrono-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--ardoise-line);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .08);
+  cursor: pointer;
+  line-height: 1;
+  transition: background-color .15s, border-color .15s;
+}
+.chrono-btn i[class^="ph-"] { font-size: 15px; }
+.chrono-btn:hover,
+.chrono-btn:focus-visible { background: rgba(255, 255, 255, .18); border-color: #5a6b7b; outline: none; }
+.chrono-btn:active { transform: scale(.94); }
+.chrono-btn:disabled { opacity: .35; cursor: not-allowed; }
+.chrono-btn:disabled:hover { background: rgba(255, 255, 255, .08); border-color: var(--ardoise-line); }
+
+/* ▶ en vert : c'est le départ. ❙❙ reste blanc — l'ambre de la charte désigne ce
+   qui vient du brief de la séance, l'emprunter ici brouillerait ce sens.
+   Le préfixe .topbar n'est pas décoratif : sans lui, la règle qui met TOUTES les
+   icônes de la barre en blanc (ligne 98) est plus spécifique que celle-ci — un
+   attribut y pèse plus que la classe qui manque — et le vert ne prendrait pas. */
+.topbar .chrono-btn-toggle .ph-play { color: #34d399; }
 
 /* --- Toggle bilingue FR | EN (pilule, façon NavXpress, accent vert) --- */
 .btn-lang {
@@ -167,6 +262,15 @@ i[class^="ph-"], i[class*=" ph-"] {
 /* La clé d'accès prend le violet de Tours. */
 #btn-api-key { background: var(--violet); }
 #btn-api-key:hover { background: var(--violet-h); }
+
+/* La recherche garde le bleu d'action principale malgré .btn-icon, dont elle ne
+   prend que la géométrie (carré, icône 20px). Le gris de .btn-icon désigne les
+   commandes secondaires — imports, bascules de panneau ; chercher un terrain
+   n'en est pas une. Même procédé que la clé d'accès ci-dessus : un sélecteur
+   d'ID, qui l'emporte sur la classe quel que soit l'ordre des règles. */
+#btn-recherche { background: var(--bleu); }
+#btn-recherche:hover,
+#btn-recherche:focus-visible { background: var(--bleu-h); }
 
 /* Bouton-icône (import) : carré, icône 20px */
 .btn-icon { padding: .45rem .6rem; line-height: 0; }
@@ -926,6 +1030,67 @@ main.brief-open .wind-indicator { left: calc(50% - var(--brief-w) / 2); }
 
 /* Message d'erreur de la modale « cercle de portée » (vide = invisible) */
 .modal-error { margin: 0 0 14px; min-height: 1em; color: var(--danger); font-size: .85rem; }
+
+/* --- Modale « Rechercher » (aérodrome ou navaid) --- */
+/* Un peu plus large et de hauteur FIXE : la liste grandit à l'intérieur, sans
+   faire sauter la boîte à chaque frappe — on lit une liste qui bouge très mal. */
+.recherche-modal { width: min(620px, 94vw); display: flex; flex-direction: column; height: min(640px, 88vh); }
+.recherche-modal .modal-text { margin-bottom: 12px; font-size: .88rem; }
+
+.recherche-etat {
+  margin: 8px 0 6px;
+  min-height: 1em;
+  font-size: .82rem;
+  color: var(--muted);
+}
+/* Base absente : ce n'est pas « aucun résultat », c'est une action à faire. */
+.recherche-etat.est-avert { color: var(--warn); font-weight: 600; }
+
+.recherche-liste {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.recherche-liste:empty { border-style: dashed; }
+
+/* Une ligne de résultat : le code en tête (colonne fixe, en chasse fixe pour que
+   les codes s'alignent), le nom, puis le détail qui départage deux terrains
+   homonymes. */
+.recherche-item {
+  display: grid;
+  grid-template-columns: 78px 1fr;
+  grid-template-areas: 'code nom' 'code detail';
+  column-gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--sep);
+  border-left: 3px solid transparent;
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+.recherche-item:last-child { border-bottom: 0; }
+.recherche-item:hover { background: var(--bande); }
+/* Ligne visée au clavier : Entrée l'ouvre. Le liseré à gauche la distingue du
+   simple survol de la souris, qui peut être ailleurs. */
+.recherche-item.est-vise { background: var(--bande); border-left-color: var(--bleu); }
+.recherche-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.recherche-code {
+  grid-area: code;
+  align-self: center;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--accent);
+}
+.recherche-nom { grid-area: nom; font-size: 13px; font-weight: 600; color: var(--title); }
+.recherche-detail { grid-area: detail; font-size: 11px; color: var(--muted); }
 
 /* --- Modale « À propos » --- */
 /* +50px de hauteur via le padding vertical (20 → 45), largeur inchangée.

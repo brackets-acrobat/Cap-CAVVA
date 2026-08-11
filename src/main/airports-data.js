@@ -156,6 +156,119 @@ function aeroportParCode(code) {
   return { ok: true, airport: { code: a.code, ident: a.ident, name: a.name, lat: a.lat, lon: a.lon, type: a.type, elevation_ft: a.elevation_ft } };
 }
 
+// ------------------------------------------------------------
+// Recherche par code OACI ou par nom
+// ------------------------------------------------------------
+//
+// ── Périmètre : la France, et rien d'autre ──────────────────────────────────
+// Les bases MSFS sont mondiales — 85 680 aérodromes, 7 583 navaids. Chercher
+// « TOURS » dedans ramène des terrains de quatre continents, et la liste devient
+// inutilisable. Deux règles, une par base, parce que les deux bases ne portent
+// pas la même information :
+//
+//   • AÉRODROMES : code commençant par LF. Vérifié sur la base en service —
+//     1 845 retenus, et AUCUN aérodrome dont MSFS déclare la région française
+//     n'y échappe. (Le champ iso_region, lui, n'en désignerait que 429 : il est
+//     vide sur la plus grande partie de l'export.)
+//
+//   • NAVAIDS : appartenance à l'emprise de la métropole et de la Corse. Leur
+//     indicatif est un trigramme qui ne porte aucun pays (MTL, DJL…), donc la
+//     règle « LF » ne s'y applique pas. iso_region, testé, ne convient pas non
+//     plus : il retient trois stations hors de France (Colorado, Miquelon,
+//     Brésil) et en manque six qui y sont, mal étiquetées. La position, elle,
+//     ne se trompe pas. Contrepartie assumée : l'emprise inclut les stations
+//     frontalières voisines (allemandes, espagnoles, belges, suisses,
+//     italiennes) — utiles au flanquement le long d'une frontière.
+const FRANCE_METRO = { sud: 41.2, nord: 51.2, ouest: -5.3, est: 9.7 };
+
+function enFranceMetro(item) {
+  return item.lat >= FRANCE_METRO.sud && item.lat <= FRANCE_METRO.nord
+      && item.lon >= FRANCE_METRO.ouest && item.lon <= FRANCE_METRO.est;
+}
+
+// Repli des diacritiques et de la casse : « Aérodrome » se trouve en tapant
+// « aerodrome ». Personne ne saisit les accents dans un champ de recherche.
+function plier(s) {
+  // La classe \p{M} couvre les marques combinantes que NFD vient de détacher.
+  // Nommée plutôt qu'écrite en plage : des combinantes littérales dans le
+  // source seraient invisibles à la relecture.
+  return String(s == null ? '' : s).normalize('NFD').replace(/\p{M}/gu, '').toUpperCase();
+}
+
+const RECHERCHE_MAX = 60;      // résultats renvoyés au plus
+const RECHERCHE_MIN_CAR = 2;   // en deçà, tout correspond : on ne cherche pas
+
+// Index de recherche : codes et noms repliés UNE FOIS. Replier à chaque frappe
+// coûterait deux normalize() par enregistrement — six chiffres d'appels pour un
+// caractère tapé. Construit paresseusement, invalidé par reload() comme les
+// caches de base.
+let _index = null;
+
+function chargerIndex() {
+  if (_index) return _index;
+  const idx = [];
+  for (const a of chargerAeroports()) {
+    if (!String(a.code || '').toUpperCase().startsWith('LF')) continue;
+    idx.push({
+      codes: [plier(a.code), plier(a.ident)],
+      nom: plier(a.name),
+      lieu: {
+        genre: 'airport', code: a.code || a.ident, ident: a.ident, name: a.name,
+        lat: a.lat, lon: a.lon, type: a.type, elevation_ft: a.elevation_ft, runway: a.runway,
+      },
+    });
+  }
+  for (const n of chargerNavaids()) {
+    if (!enFranceMetro(n)) continue;
+    idx.push({
+      codes: [plier(n.ident)],
+      nom: plier(n.name),
+      lieu: {
+        genre: 'navaid', code: n.ident, ident: n.ident, name: n.name,
+        lat: n.lat, lon: n.lon, type: n.type, freqKhz: n.freqKhz, rangeNm: n.rangeNm,
+      },
+    });
+  }
+  _index = idx;
+  return _index;
+}
+
+// Rang d'une correspondance, du plus au moins pertinent. Le code exact passe
+// devant tout : qui tape « LFMD » veut Cannes, pas les terrains dont le nom
+// contient ces quatre lettres par accident.
+//   0 code exact · 1 code commençant par · 2 nom commençant par · 3 nom contenant
+function rangCorrespondance(q, codes, nom) {
+  for (const c of codes) if (c === q) return 0;
+  for (const c of codes) if (c.startsWith(q)) return 1;
+  if (nom.startsWith(q)) return 2;
+  if (nom.includes(q)) return 3;
+  return -1;
+}
+
+function rechercherLieux(requete, limite) {
+  const q = plier(requete).trim();
+  if (q.length < RECHERCHE_MIN_CAR) return { ok: false, reason: 'too-short' };
+  const idx = chargerIndex();
+  if (!idx.length) return { ok: false, reason: 'no-data' };
+
+  const trouves = [];
+  for (const e of idx) {
+    const rang = rangCorrespondance(q, e.codes, e.nom);
+    if (rang >= 0) trouves.push({ rang, lieu: e.lieu });
+  }
+  // À rang égal, l'ordre alphabétique — pas celui du fichier d'import, qui n'a
+  // aucun sens pour qui lit la liste.
+  trouves.sort((x, y) => x.rang - y.rang || x.lieu.name.localeCompare(y.lieu.name, 'fr'));
+
+  const max = Number.isFinite(limite) && limite > 0 ? limite : RECHERCHE_MAX;
+  return {
+    ok: true,
+    total: trouves.length,
+    tronque: trouves.length > max,
+    lieux: trouves.slice(0, max).map((t) => t.lieu),
+  };
+}
+
 // Distance grand cercle (NM) entre deux points.
 function distNmEntre(lat1, lon1, lat2, lon2) {
   const R = 3440.065;
@@ -185,6 +298,8 @@ function featureProche(lat, lon, rayonNm) {
 }
 
 // Invalide les caches (après un import) → rechargés à la prochaine requête.
-function reload() { _airports = null; _navaids = null; }
+// _index en fait partie : il est bâti SUR ces caches, le laisser survivre à un
+// import ferait chercher dans l'ancienne base.
+function reload() { _airports = null; _navaids = null; _index = null; }
 
-module.exports = { aeroportsDansBbox, navaidsDansBbox, aeroportParCode, featureProche, reload };
+module.exports = { aeroportsDansBbox, navaidsDansBbox, aeroportParCode, rechercherLieux, featureProche, reload };

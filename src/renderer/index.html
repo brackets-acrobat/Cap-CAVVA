@@ -45,6 +45,36 @@
       </button>
       <button id="btn-api-key" class="btn" data-i18n-title="apiKeyTitle" title="Clé CAVVA"><i class="ph-light ph-key"></i> <span data-i18n="btnApiKey">Clé CAVVA</span></button>
       <button id="btn-connect" class="btn btn-state-off"><i class="ph-light ph-plugs"></i> Connecter MSFS2024</button>
+      <!-- Recherche d'un aérodrome ou d'un navaid par code OACI ou par nom.
+           Loupe seule : .btn-icon pour la géométrie du bouton-icône, mais le bleu
+           lui est rendu dans la feuille de style (voir #btn-recherche). -->
+      <button id="btn-recherche" class="btn btn-icon" data-i18n-title="searchTitle" title="Rechercher un aérodrome ou un navaid">
+        <i class="ph-light ph-magnifying-glass"></i>
+      </button>
+    </div>
+    <!-- Groupe CENTRE : chronomètre (MM:SS) et temps de vol (HH:MM:SS), repris de
+         NavXpressVFR. Les deux comptent à la hausse. Sorti du flux et centré sur
+         la barre elle-même (voir .chrono-bar) : les groupes gauche et droit n'ont
+         pas la même largeur, un centrage par flex le poserait de travers.
+         Icône seule au lieu du libellé « CHRONOMÈTRE » / « TIMER » : la barre est
+         déjà chargée, et 340 px tiennent là où 600 auraient débordé. -->
+    <div class="chrono-bar">
+      <div class="chrono-item">
+        <i class="ph-light ph-timer chrono-icone" data-i18n-title="chronoLabel" title="Chronomètre"></i>
+        <span class="chrono-display" id="chrono-display">00:00</span>
+        <button class="chrono-btn chrono-btn-toggle" id="chrono-toggle" type="button"
+                data-i18n-title="chronoStart" title="Démarrer"><i class="ph-light ph-play"></i></button>
+        <button class="chrono-btn chrono-btn-reset" id="chrono-reset" type="button"
+                data-i18n-title="chronoReset" title="Remise à zéro"><i class="ph-light ph-arrow-counter-clockwise"></i></button>
+      </div>
+      <div class="chrono-item">
+        <i class="ph-light ph-hourglass chrono-icone" data-i18n-title="timerLabel" title="Timer"></i>
+        <span class="chrono-display" id="timer-display">00:00:00</span>
+        <button class="chrono-btn chrono-btn-toggle" id="timer-toggle" type="button"
+                data-i18n-title="chronoStart" title="Démarrer"><i class="ph-light ph-play"></i></button>
+        <button class="chrono-btn chrono-btn-reset" id="timer-reset" type="button"
+                data-i18n-title="chronoReset" title="Remise à zéro"><i class="ph-light ph-arrow-counter-clockwise"></i></button>
+      </div>
     </div>
     <!-- Groupe DROIT : les panneaux et les imports, puis la bascule de langue -->
     <div class="conn">
@@ -221,6 +251,21 @@
       <div class="modal-actions">
         <button id="btn-apikey-cancel" class="btn"><span data-i18n="btnCancel">Annuler</span></button>
         <button id="btn-apikey-save" class="btn btn-accent"><i class="ph-light ph-floppy-disk"></i> <span data-i18n="btnSaveKey">Enregistrer</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale : recherche d'un aérodrome ou d'un navaid (code OACI ou nom) -->
+  <div id="recherche-overlay" class="overlay" hidden>
+    <div class="modal recherche-modal">
+      <h3><i class="ph-light ph-magnifying-glass"></i> <span data-i18n="searchTitle">Rechercher un aérodrome ou un navaid</span></h3>
+      <p class="modal-text" data-i18n="searchIntro">Code OACI ou nom, deux caractères au moins. Les aérodromes français (code commençant par LF) et les navaids de métropole, tels que la base MSFS 2024 les décrit.</p>
+      <input id="recherche-input" class="field-input" type="text" spellcheck="false" autocomplete="off"
+             data-i18n-placeholder="searchPlaceholder" placeholder="LFMD, Mandelieu, MTL…">
+      <p id="recherche-etat" class="recherche-etat"></p>
+      <div id="recherche-liste" class="recherche-liste" role="listbox"></div>
+      <div class="modal-actions">
+        <button id="btn-recherche-fermer" class="btn"><span data-i18n="btnClose">Fermer</span></button>
       </div>
     </div>
   </div>
@@ -462,6 +507,8 @@
   <script src="js/features/alerte-espaces.js"></script>
   <script src="js/features/mesure-carte.js"></script>
   <script src="js/features/flanquement.js"></script>
+  <script src="js/features/chronos.js"></script>
+  <script src="js/features/recherche-lieux.js"></script>
   <script src="js/features/cle-api.js"></script>
   <script src="js/features/apropos.js"></script>
   <script src="js/features/maj.js"></script>

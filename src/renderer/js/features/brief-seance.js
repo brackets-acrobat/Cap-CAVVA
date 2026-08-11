@@ -402,6 +402,11 @@ function ouvrirFermerBrief(ouvrir) {
   document.querySelector('main').classList.toggle('brief-open', ouvrir);
   // Deux panneaux sur le tiers droit ne peuvent pas coexister.
   if (ouvrir && typeof ouvrirFermerLegs === 'function' && !$('legs-panel').hidden) ouvrirFermerLegs(false);
+  // Le panneau vient de prendre (ou de rendre) la droite de la carte : en suivi,
+  // l'avion doit revenir au milieu de ce qui reste visible tout de suite. Sans
+  // cet appel, seule la trame suivante du simulateur le rattrape — et rien du
+  // tout s'il est en pause. Même geste que ouvrirFermerLegs().
+  if (suiviActif && !suiviPause) recentrerAvion();
   mettreAJourProfilVertical();   // la largeur de la bande profil change avec ce panneau
 }
 

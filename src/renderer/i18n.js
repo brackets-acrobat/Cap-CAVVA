@@ -105,6 +105,28 @@ const TRANSLATIONS = {
     btnClose: 'Fermer',
     btnCancel: 'Annuler',
 
+    // Chronomètre et temps de vol (barre du haut). Mêmes clés que NavXpressVFR,
+    // dont ces compteurs viennent — chronoStart/chronoStop servent aux deux.
+    chronoLabel: 'Chronomètre',
+    timerLabel: 'Temps de vol',
+    chronoStart: 'Démarrer',
+    chronoStop: 'Arrêter',
+    chronoReset: 'Remise à zéro',
+
+    // Recherche d'un aérodrome ou d'un navaid (code OACI ou nom).
+    // Le bouton de la barre n'a que sa loupe : searchTitle lui sert d'infobulle
+    // ET de titre de modale — le même libellé, qui dit la même chose.
+    searchTitle: 'Rechercher un aérodrome ou un navaid',
+    searchIntro: 'Code OACI ou nom, deux caractères au moins. Les aérodromes français (code commençant par LF) et les navaids de métropole, tels que la base MSFS 2024 les décrit.',
+    searchPlaceholder: 'LFMD, Mandelieu, MTL…',
+    searchTooShort: 'Tapez au moins deux caractères.',
+    searchNone: 'Aucun résultat.',
+    searchCount: '{n} résultat(s).',
+    searchCountTruncated: 'Les {n} premiers résultats sur {total} — précisez la recherche.',
+    searchNoData: 'Base MSFS 2024 absente : importez les aéroports et les navaids (menu Importer).',
+    searchError: 'La recherche a échoué.',
+    searchRunway: 'Piste',
+
     // {url} est remplacé par l'URL de l'API.
     apiConfigured: 'CAVVA : {url} — clé configurée ✓',
     apiMissing: 'CAVVA : {url} — ⚠ clé non configurée (cliquez sur « Clé CAVVA »).',
@@ -418,6 +440,27 @@ const TRANSLATIONS = {
     // Labels shared by the modals
     btnClose: 'Close',
     btnCancel: 'Cancel',
+
+    // Stopwatch and flight time (topbar). Same keys as NavXpressVFR, where these
+    // counters come from — chronoStart/chronoStop serve both.
+    chronoLabel: 'Stopwatch',
+    timerLabel: 'Flight time',
+    chronoStart: 'Start',
+    chronoStop: 'Stop',
+    chronoReset: 'Reset',
+
+    // Airport / navaid search (ICAO code or name). The topbar button is the
+    // magnifier alone: searchTitle serves as both its tooltip and the modal title.
+    searchTitle: 'Search for an airport or a navaid',
+    searchIntro: 'ICAO code or name, at least two characters. French airports (code starting with LF) and mainland navaids, as the MSFS 2024 database describes them.',
+    searchPlaceholder: 'LFMD, Mandelieu, MTL…',
+    searchTooShort: 'Type at least two characters.',
+    searchNone: 'No result.',
+    searchCount: '{n} result(s).',
+    searchCountTruncated: 'First {n} results out of {total} — narrow the search.',
+    searchNoData: 'MSFS 2024 database missing: import airports and navaids (Import menu).',
+    searchError: 'The search failed.',
+    searchRunway: 'Runway',
 
     apiConfigured: 'CAVVA: {url} — key configured ✓',
     apiMissing: 'CAVVA: {url} — ⚠ key not configured (click “CAVVA key”).',

@@ -65,6 +65,7 @@ contextBridge.exposeInMainWorld('cap', {
   aeroportsDansBbox: (bbox) => ipcRenderer.invoke('aeroports-bbox', bbox),
   navaidsDansBbox: (bbox) => ipcRenderer.invoke('navaids-bbox', bbox),
   aeroportParCode: (code) => ipcRenderer.invoke('aeroport-par-code', code),
+  rechercherLieux: (requete) => ipcRenderer.invoke('rechercher-lieux', requete),
   featureProche: (lat, lon, rayonNm) => ipcRenderer.invoke('feature-proche', { lat, lon, rayonNm }),
   ouvrirVac: (code) => ipcRenderer.invoke('ouvrir-vac', code),
   ouvrirFicheUlm: (lat, lon) => ipcRenderer.invoke('ouvrir-fiche-ulm', { lat, lon }),

@@ -268,6 +268,8 @@ ipcMain.handle('aeroports-bbox', async (_e, bbox) => {
 });
 ipcMain.handle('navaids-bbox', async (_e, bbox) => airportsData.navaidsDansBbox(bbox));
 ipcMain.handle('aeroport-par-code', async (_e, code) => airportsData.aeroportParCode(code));
+// Recherche par code OACI ou par nom, restreinte à la France (cf. airports-data).
+ipcMain.handle('rechercher-lieux', async (_e, requete) => airportsData.rechercherLieux(requete));
 // Aimantation d'un point tournant : le plus proche entre les bases MSFS
 // (aéroports, navaids) et les points de report VFR du SIA. Deux sources, deux
 // modules — c'est ici qu'on les départage, au plus près.
