@@ -48,6 +48,9 @@ function construirePlan() {
     // Flanquements VOR : identité de la station et positions seulement. Radial
     // et distance sont recalculés à la lecture, la déclinaison ayant pu changer.
     flanquements: flanquementsEnregistrables(),
+    // Tours de piste : paramètres saisis et seuils de la piste. La déclinaison
+    // y figure, elle — les caps affichés doivent être ceux du brief.
+    toursDePiste: toursDePisteEnregistrables(),
     // Paramètres de navigation : vitesse propre et vent prévu (direction
     // MAGNÉTIQUE d'où vient le vent). Les temps par branche en découlent — ils
     // ne sont pas stockés, ils se recalculent.
@@ -117,6 +120,7 @@ function appliquerPlan(plan) {
   majBoutonsPlan();
   majLigneRoute({ fit: true });   // re-résout les ICAO, redessine, recalcule la déclinaison, recadre sur le tracé
   chargerFlanquements(plan.flanquements);   // absent des plans antérieurs : la liste est alors vide
+  chargerToursDePiste(plan.toursDePiste);   // idem : absent d'un plan antérieur → aucun circuit
 }
 
 // Nouveau plan : réinitialise tout l'état (ICAO, points de dép./arr. cliqués,
@@ -131,6 +135,7 @@ function reinitialiserPlan() {
   _legActif = 0;
   effacerCercles();   // comme NavXpressVFR : « Nouveau plan » efface aussi les cercles
   effacerTousFlanquements();   // les flanquements visent des points de CETTE route
+  effacerTousToursDePiste();   // et les circuits, des terrains de CE plan
   // Vitesse propre et vent : DÉLIBÉRÉMENT conservés. L'avion du jour et le vent
   // du jour ne changent pas parce qu'on retrace une route ; les ressaisir à
   // chaque essai serait une corvée. Un plan chargé, lui, impose les siens.

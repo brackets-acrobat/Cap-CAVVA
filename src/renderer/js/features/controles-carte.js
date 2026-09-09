@@ -26,6 +26,10 @@ function ajouterControlesCarte() {
           `<label><input type="checkbox" data-layer="heliports"> <span data-i18n="layerHeliports">${t('layerHeliports')}</span></label>` +
           `<label><input type="checkbox" data-layer="seaplanes"> <span data-i18n="layerSeaplanes">${t('layerSeaplanes')}</span></label>` +
           `<label><input type="checkbox" data-layer="navaids"> <span data-i18n="layerNavaids">${t('layerNavaids')}</span></label>` +
+          // Les pistes ont leur propre seuil de zoom (12) : la note ci-dessous
+          // ne vaut que pour les quatre couches qui précèdent.
+          `<label><input type="checkbox" data-layer="pistes"> <span data-i18n="layerPistes">${t('layerPistes')}</span></label>` +
+          `<label><input type="checkbox" data-layer="parkings"> <span data-i18n="layerParkings">${t('layerParkings')}</span></label>` +
           // Séparé des quatre précédentes : celles-là viennent de MSFS, celle-ci
           // de l'export du SIA. Rien ne s'affichera tant qu'il n'a pas été converti.
           `<hr class="map-dd-sep">` +

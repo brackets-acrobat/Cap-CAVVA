@@ -18,7 +18,33 @@ function escapeHtml(s) {
 }
 
 // Décale une longitude [-180,180] vers la copie du monde visible (scroll infini).
+// POUR UN POINT SEUL : un marqueur, qui est dans la vue par construction.
 function lonVersVue(lon, west) { return west + ((((lon - west) % 360) + 360) % 360); }
+
+// Convertisseur de longitudes d'une FIGURE ÉTENDUE — piste, aire de
+// stationnement. Rendu sous forme de fonction, et non de simple décalage, pour
+// qu'on ne puisse pas l'appliquer à un point en oubliant les autres : c'est
+// précisément cet oubli qui cassait le tracé.
+//
+// POURQUOI PAS lonVersVue SUR CHAQUE POINT. Elle ramène chaque longitude dans
+// [ouest, ouest + 360[, indépendamment des autres. Un marqueur s'en accommode ;
+// une piste non. Que le bord ouest de la vue tombe ENTRE ses deux seuils — ce
+// qui arrive dès qu'on zoome sur une grande plate-forme — et l'un des deux part
+// un tour de Terre plus loin que l'autre : le rectangle s'étire alors sur 359,9°
+// et barre l'écran d'un bout à l'autre. Constaté à Roissy au zoom 15.
+//
+// Deux corrections, donc, et il faut les DEUX :
+//   1. la copie du monde est choisie UNE FOIS pour toute la figure, au plus
+//      près du CENTRE de la vue et non de son bord ouest — une figure qui
+//      déborde du cadre doit rester à côté, pas sauter à l'antipode ;
+//   2. chaque point est ensuite déroulé autour de l'ancre, à moins de 180°
+//      d'elle — sans quoi une piste posée SUR l'antiméridien, dont un seuil est
+//      à +179,99 et l'autre à −179,99, enjamberait encore la carte entière.
+function projecteurFigure(lonRef, bbox) {
+  const centre = (bbox.west + bbox.east) / 2;
+  const decalage = 360 * Math.round((centre - lonRef) / 360);
+  return (lon) => lonRef + decalage + ((((lon - lonRef) % 360) + 540) % 360 - 180);
+}
 
 // Couleur du marqueur aéroport selon la surface de la piste principale (NavXpress).
 function surfaceMarkerColors(surface) {
@@ -125,6 +151,12 @@ function planifierRafraichirCouches() {
 function rafraichirCouches() {
   rafraichirAeroports();
   rafraichirNavaids();
+  // Pistes tracées à l'échelle (zoom 12) : même donnée MSFS que les aérodromes,
+  // mais une requête à part — elle porte TOUTES les pistes, pas la principale.
+  if (typeof rafraichirPistes === 'function') rafraichirPistes();
+  // Places de stationnement (zoom 15) : requête à part encore, car elle relit
+  // le fichier au lieu de lire un index.
+  if (typeof rafraichirParkings === 'function') rafraichirParkings();
   // Points de report VFR : même seuil de zoom, mais la donnée vient du SIA et
   // non de MSFS — d'où son fichier à part (points-vfr.js).
   if (typeof rafraichirPointsVfr === 'function') rafraichirPointsVfr();

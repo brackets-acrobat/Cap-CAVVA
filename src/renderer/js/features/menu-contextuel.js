@@ -82,6 +82,10 @@ function ouvrirMenuAeroport(airport, e) {
   // Fiche terrain FFPLUM : seulement si le rapprochement par coordonnées, fait
   // côté principal, a trouvé un terrain BASULM à moins de 500 m.
   if (airport.ficheUlm) items.push({ label: t('ctxFicheUlm'), action: () => ouvrirFicheTerrain(airport) });
+  // Tour de piste : seulement là où il y a une piste. Un héliport n'en a pas,
+  // et le marqueur porte déjà la réponse — pas besoin d'interroger la base pour
+  // construire le menu.
+  if (airport.runway) items.push({ label: t('ctxTourDePiste'), action: () => ouvrirModaleTourDePiste(airport) });
   // Cercle de portée centré sur l'aéroport (rayon saisi dans la modale).
   items.push({ label: t('ctxRangeCircle'), action: () => ouvrirModaleCercle(L.latLng(airport.lat, airport.lon)) });
   // Mesurer depuis un aérodrome est le cas le plus courant : on l'offre ici
@@ -89,6 +93,7 @@ function ouvrirMenuAeroport(airport, e) {
   items.push({ label: t('ctxMesure'), action: () => demarrerMesure(L.latLng(airport.lat, airport.lon)) });
   if (aUneMesure()) items.push({ label: t('ctxMesureEffacer'), action: effacerMesure });
   if (aDesCercles()) items.push({ label: t('ctxRangeClear'), action: effacerCercles });
+  if (aDesToursDePiste()) items.push({ label: t('ctxTourDePisteClear'), action: effacerTousToursDePiste });
   ouvrirMenuContextuel(p.x, p.y, items);
 }
 
@@ -104,6 +109,7 @@ function itemsFondCarte(latlng) {
   ];
   if (aUneMesure()) items.push({ label: t('ctxMesureEffacer'), action: effacerMesure });
   if (aDesCercles()) items.push({ label: t('ctxRangeClear'), action: effacerCercles });
+  if (aDesToursDePiste()) items.push({ label: t('ctxTourDePisteClear'), action: effacerTousToursDePiste });
   return items;
 }
 function ouvrirMenuFondCarte(e) {
@@ -131,6 +137,17 @@ function ouvrirMenuFlanquement(e, supprimerCeFlanquement) {
   const p = ctxPageXY(e);
   const items = itemsFondCarte(e.latlng);
   items.push({ label: t('ctxFlanquementDeleteOne'), action: supprimerCeFlanquement });
+  ouvrirMenuContextuel(p.x, p.y, items);
+}
+
+// Menu sur le tracé d'un tour de piste : options du fond de carte + suppression
+// de CE circuit. Même façon que pour un cercle de portée ou un flanquement.
+function ouvrirMenuTourDePiste(e, supprimerCeTour) {
+  if (e.originalEvent) e.originalEvent.preventDefault();
+  L.DomEvent.stopPropagation(e);
+  const p = ctxPageXY(e);
+  const items = itemsFondCarte(e.latlng);
+  items.push({ label: t('ctxTourDePisteDeleteOne'), action: supprimerCeTour });
   ouvrirMenuContextuel(p.x, p.y, items);
 }
 

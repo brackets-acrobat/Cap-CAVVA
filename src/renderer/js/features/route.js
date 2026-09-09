@@ -183,6 +183,33 @@ function distanceNM(latA, lonA, latB, lonB) {
   return 2 * _RAYON_TERRE_NM * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
+// Point atteint depuis (lat, lon) en suivant un cap VRAI sur `distM` mètres.
+// La longitude rendue n'est PAS repliée dans [-180, 180] : celui qui construit
+// une figure locale (tour de piste, rectangle de piste) travaille dans un repère
+// déroulé autour de son point de départ, ce qui évite qu'un côté traverse la
+// carte de part en part sur l'antiméridien. À replier soi-même avant tout
+// enregistrement.
+function pointADistance(lat, lon, capVrai, distM) {
+  const R = 6371000;                                   // rayon terrestre, mètres
+  const d = distM / R, t = capVrai * Math.PI / 180;
+  const f1 = lat * Math.PI / 180, l1 = lon * Math.PI / 180;
+  const sinf2 = Math.sin(f1) * Math.cos(d) + Math.cos(f1) * Math.sin(d) * Math.cos(t);
+  const f2 = Math.asin(Math.min(1, Math.max(-1, sinf2)));
+  const y = Math.sin(t) * Math.sin(d) * Math.cos(f1);
+  const x = Math.cos(d) - Math.sin(f1) * sinf2;
+  return { lat: f2 * 180 / Math.PI, lon: (l1 + Math.atan2(y, x)) * 180 / Math.PI };
+}
+
+// Angle ÉCRAN (degrés, sens horaire) alignant un texte horizontal sur une ligne
+// de cap vrai `cap`. Carte nord en haut : nord = −y, est = +x. Ramené dans
+// (−90, 90] pour ne jamais écrire à l'envers.
+function angleEcranPourCap(cap) {
+  const r = cap * Math.PI / 180;
+  let a = Math.atan2(-Math.cos(r), Math.sin(r)) * 180 / Math.PI;
+  if (a > 90) a -= 180; else if (a < -90) a += 180;
+  return a;
+}
+
 // Portage fidèle de atools::geo::Pos::distanceMeterToLine (Little Navmap) :
 // projette P sur la droite grand-cercle A→B. Toutes distances en NM.
 //   status        : 'ALONG_TRACK' (pied entre A et B), 'BEFORE_START' (avant A),

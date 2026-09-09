@@ -69,6 +69,8 @@ const layerState = {
   heliports: localStorage.getItem('cap-layer-heliports') === '1',
   seaplanes: localStorage.getItem('cap-layer-seaplanes') === '1',
   navaids:   localStorage.getItem('cap-layer-navaids')   === '1',
+  pistes:    localStorage.getItem('cap-layer-pistes')    === '1',
+  parkings:  localStorage.getItem('cap-layer-parkings')  === '1',
   pointsVfr: localStorage.getItem('cap-layer-pointsVfr') === '1',
   obstacles: localStorage.getItem('cap-layer-obstacles') === '1',
   phares:    localStorage.getItem('cap-layer-phares')    === '1',
@@ -127,6 +129,13 @@ function initMap() {
   // canvas dédié — 2 200 polygones en SVG feraient ramer le déplacement.
   _espacesRenderer = L.canvas({ padding: 0.4 });
   espacesLayer   = L.layerGroup().addTo(map);
+  // Pistes tracées à l'échelle : juste au-dessus des espaces (qui sont le fond
+  // documentaire) et sous tout le reste — un rectangle de piste ne doit jamais
+  // masquer la route ni le marqueur de son propre terrain.
+  pistesLayer    = L.layerGroup().addTo(map);
+  // Places de stationnement (zoom 15) : au-dessus des pistes, qu'elles
+  // bordent sans jamais les recouvrir à ce zoom.
+  parkingsLayer  = L.layerGroup().addTo(map);
 
   // Couches de données + contrôles déroulants (haut-droite)
   airportsLayer  = L.layerGroup().addTo(map);
@@ -138,6 +147,7 @@ function initMap() {
   _rangeLayer    = L.layerGroup().addTo(map);   // cercles de portée (magenta)
   _briefLayer    = L.layerGroup().addTo(map);   // rayon de départ et repères du brief (ambre)
   routeLayer     = L.layerGroup().addTo(map);   // ligne de route départ → arrivée
+  initTourDePiste();   // tours de piste (rouge) — couches ajoutées selon le zoom
   ajouterBoutonSuivi();
   ajouterControlesCarte();
   map.on('moveend', planifierRafraichirCouches);
